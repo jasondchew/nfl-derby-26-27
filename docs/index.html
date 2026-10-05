@@ -65,13 +65,6 @@ h2 { font: 800 24px var(--f-display); text-transform: uppercase; margin: 8px 0 0
 .def h3 { font: 600 15px var(--f-label); letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 4px; }
 .def p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 65ch; }
 .def code { font: 500 13px ui-monospace, Consolas, monospace; background: var(--lane); padding: 1px 4px; border-radius: 4px; }
-.tbl { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
-th { font: 600 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule); }
-td { padding: 5px 10px; text-align: right; border-bottom: 1px solid var(--lane); }
-th:nth-child(2), td:nth-child(2) { text-align: left; }
-tr.sel td { background: var(--accent-soft); }
-.sorted { color: var(--ink); }
 .hl-sub { color: var(--ink-2); margin: 2px 0 12px; font-size: 14px; }
 .hl-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .hl-card { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
@@ -121,27 +114,16 @@ footer a { color: var(--ink-2); }
     <div class="tip" id="tip" hidden></div>
   </div>
 
+  <div class="defs">
+    <div class="def"><h3>Wins</h3><p>What the official standings use. Simple, but a 1-point win counts the same as a 30-point blowout, and early in the season lots of teams share the same record.</p></div>
+    <div class="def"><h3>Point differential</h3><p>Points scored minus points allowed, added up game by game. Close games are close to coin flips, so margin tends to predict future wins better than record does.</p></div>
+    <div class="def"><h3>Strength-adjusted</h3><p>Each game becomes one equation: <code>home rating − away rating = margin</code>. With more games than teams there's no exact solution, so the ratings are the least-squares best fit (sum of ratings fixed at 0). Beating a strong team by 10 counts for more than beating a weak one by 10. It jumps around early in the season and settles as games pile up.</p></div>
+  </div>
+
   <section class="hl">
     <h2 id="hlh">Highlights</h2>
     <p class="hl-sub" id="hlsub"></p>
     <div class="hl-list" id="hllist"></div>
-  </section>
-
-  <section>
-    <h2>Three ways to define "best"</h2>
-    <div class="defs">
-      <div class="def"><h3>Wins</h3><p>What the official standings use. Simple, but a 1-point win counts the same as a 30-point blowout, and four weeks in, half the league is tied with someone.</p></div>
-      <div class="def"><h3>Point differential</h3><p>Points scored minus points allowed, added up game by game. Close games are close to coin flips, so margin tends to predict future wins better than record does.</p></div>
-      <div class="def"><h3>Strength-adjusted</h3><p>Each game becomes one equation: <code>home rating − away rating = margin</code>. With more games than teams there's no exact solution, so the ratings are the least-squares best fit (sum of ratings fixed at 0). Beating a strong team by 10 counts for more than beating a weak one by 10. Expect it to jump around this early in the season.</p></div>
-    </div>
-  </section>
-
-  <section>
-    <h2 id="tblh">Standings</h2>
-    <div class="tbl"><table>
-      <thead><tr><th>#</th><th>Team</th><th>Record</th><th data-m="pd">Pt diff</th><th data-m="srs">Strength</th></tr></thead>
-      <tbody id="tbody"></tbody>
-    </table></div>
   </section>
 
   <footer id="foot"></footer>
@@ -295,7 +277,6 @@ function render(dt) {
   $("lval").textContent = t < 0.5 ? "" : M[metric].fmt(v[ld]);
   $("wk").textContent = Math.round(t) === 0 ? "Gate" : "Week " + Math.round(t);
   $("scrub").value = t;
-  renderTable();
   renderHighlights();
   return moving;
 }
@@ -339,23 +320,6 @@ function renderHighlights() {
   $("hllist").replaceChildren(...cards);
 }
 
-let tblKey = "";
-function renderTable() {
-  const k = Math.round(t), key = metric + k + sel;
-  if (key === tblKey) return; tblKey = key;
-  const fr = F[k], m = metric;
-  const order = T.map((_, i) => i).sort((a, b) => fr[m][b] - fr[m][a] || fr.pd[b] - fr.pd[a] || T[a].abbr.localeCompare(T[b].abbr));
-  $("tblh").textContent = k === 0 ? "Standings" : `Standings after Week ${k}, by ${M[m].label.toLowerCase()}`;
-  document.querySelectorAll("th[data-m]").forEach(th => th.classList.toggle("sorted", th.dataset.m === m));
-  $("tbody").replaceChildren(...order.map((i, pos) => {
-    const tr = document.createElement("tr"); if (i === sel) tr.className = "sel";
-    [pos + 1, T[i].name, fr.rec[i], M.pd.fmt(fr.pd[i]), M.srs.fmt(fr.srs[i])].forEach(c => {
-      const td = document.createElement("td"); td.textContent = c; tr.append(td);
-    });
-    return tr;
-  }));
-}
-
 function tick(ts) {
   const dt = lastTs ? Math.min(64, ts - lastTs) : 16; lastTs = ts;
   if (playing) {
@@ -369,13 +333,13 @@ const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
 const setPlayLabel = () => $("play").textContent = playing ? "Pause" : t >= W ? "Replay race" : "Play race";
 
 function setSel(i) {
-  sel = i; $("follow").value = i === null ? "" : T[i].abbr; tblKey = ""; hlKey = ""; kick();
+  sel = i; $("follow").value = i === null ? "" : T[i].abbr; hlKey = ""; kick();
 }
 function setMetric(m) {
   metric = m;
   document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m));
   $("mnote").textContent = M[m].note;
-  layout(); tblKey = ""; kick();
+  layout(); kick();
 }
 
 const tip = $("tip"), board = $("board");
