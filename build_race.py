@@ -9,30 +9,10 @@ from datetime import date
 from urllib.parse import quote_plus
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).parent
 SEASON = 2026
-
-
-def strength_ratings(played, abbrs):
-    """Least-squares ratings: pick r so that r_home - r_away best matches each game's margin.
-
-    One equation per game, plus sum(r) = 0 to pin the scale. Early in the season the
-    system is underdetermined, so lstsq returns the smallest ratings that fit.
-    """
-    idx = {a: i for i, a in enumerate(abbrs)}
-    rows, margins = [], []
-    for g in played.itertuples():
-        row = np.zeros(len(abbrs))
-        row[idx[g.home_team]], row[idx[g.away_team]] = 1, -1
-        rows.append(row)
-        margins.append(g.home_score - g.away_score)
-    rows.append(np.ones(len(abbrs)))
-    margins.append(0)
-    r, *_ = np.linalg.lstsq(np.array(rows), np.array(margins), rcond=None)
-    return {a: round(float(r[idx[a]]), 2) for a in abbrs}
 
 
 PBP_URL = f"https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{SEASON}.csv.gz"
@@ -225,7 +205,7 @@ def main():
     wlt = {a: [0, 0, 0] for a in abbrs}
     last = {a: "" for a in abbrs}
     frames = [{
-        "wins": [0] * len(abbrs), "pd": [0] * len(abbrs), "srs": [0] * len(abbrs),
+        "wins": [0] * len(abbrs), "pd": [0] * len(abbrs),
         "rec": ["0-0"] * len(abbrs), "last": ["Starting gate"] * len(abbrs),
     }]
     for wk in range(1, last_week + 1):
@@ -241,11 +221,9 @@ def main():
                 pd_[us] += int(pf - pa)
                 last[us] = f"Wk {wk}: {res} {int(pf)}-{int(pa)} {at} {them}"
                 played_now.add(us)
-        srs = strength_ratings(played[played.week <= wk], abbrs)
         frames.append({
             "wins": [wins[a] for a in abbrs],
             "pd": [pd_[a] for a in abbrs],
-            "srs": [srs[a] for a in abbrs],
             "rec": ["-".join(map(str, wlt[a][:2])) + (f"-{wlt[a][2]}" if wlt[a][2] else "") for a in abbrs],
             "last": [last[a] if a in played_now else f"Wk {wk}: bye" for a in abbrs],
         })

@@ -120,7 +120,6 @@ footer a { color: var(--ink-2); }
     <div class="seg" role="group" aria-label="Best team by">
       <button type="button" data-m="pd">Point diff</button>
       <button type="button" data-m="wins">Wins</button>
-      <button type="button" data-m="srs">Strength-adj.</button>
     </div>
     <select id="follow" aria-label="Follow a team"><option value="">Follow a team…</option></select>
   </div>
@@ -141,9 +140,8 @@ footer a { color: var(--ink-2); }
   <div class="tip gtip" id="gtip" role="tooltip" hidden></div>
 
   <div class="defs">
-    <div class="def"><h3>Point differential</h3><p>Points scored minus points allowed, added up game by game. Close games are close to coin flips, so margin tends to predict future wins better than record does.</p></div>
+    <div class="def"><h3>Point differential</h3><p>Points scored minus points allowed, added up game by game. It shows not just whether a team won, but by how much.</p></div>
     <div class="def"><h3>Wins</h3><p>What the official standings use. Simple, but a 1-point win counts the same as a 30-point blowout, and early in the season lots of teams share the same record.</p></div>
-    <div class="def"><h3>Strength-adjusted</h3><p>Each game becomes one equation: <code>home rating − away rating = margin</code>. With more games than teams there's no exact solution, so the ratings are the least-squares best fit (sum of ratings fixed at 0). Beating a strong team by 10 counts for more than beating a weak one by 10. It jumps around early in the season and settles as games pile up.</p></div>
   </div>
 
   <section class="hl">
@@ -167,7 +165,6 @@ const T = D.teams, F = D.frames, W = F.length - 1, N = T.length;
 const M = {
   pd:   { label: "Point differential", fmt: v => (v > 0 ? "+" : "") + Math.round(v), round: v => Math.round(v), note: "Distance from the starting gate = total points scored minus allowed" },
   wins: { label: "Wins", fmt: v => String(Math.round(v * 2) / 2), round: v => Math.round(v * 2) / 2, note: "Distance from the starting gate = wins (ties count as half)" },
-  srs:  { label: "Strength-adjusted rating", fmt: v => (v > 0 ? "+" : "") + v.toFixed(1), round: v => Math.round(v * 10) / 10, note: "Distance = rating, in points better or worse than an average team" },
 };
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const NS = "http://www.w3.org/2000/svg";
@@ -458,7 +455,6 @@ const GLOSSARY = {
   "chance of winning": "A model's estimate of how likely a team is to win, based on the score, time left, and field position. nflverse calculates it before and after every play.",
   "betting line": "The point spread set by sportsbooks. It's the market's best guess at the final margin, and it updates as news comes in. A guide, not a sure thing.",
   "toss-up": "The betting line has these teams within a point of each other.",
-  "least-squares": "Choosing the ratings that miss the real results by as little as possible overall (it minimizes the sum of the squared misses).",
 };
 const ALIAS = { "intercepted": "interception", "fumbled": "fumble" };
 const TERM_SRC = "\\b(" + [...Object.keys(GLOSSARY), ...Object.keys(ALIAS)].sort((a, b) => b.length - a.length).join("|") + ")\\b";
@@ -526,7 +522,7 @@ function setMetric(m) {
 const tip = $("tip"), board = $("board");
 function showTip(i, e) {
   const k = Math.round(t), fr = F[k];
-  tip.innerHTML = `<b>${T[i].name}</b><br>${fr.rec[i]} · ${T[i].div}<br>Pt diff ${M.pd.fmt(fr.pd[i])} · Strength ${M.srs.fmt(fr.srs[i])}<br>${fr.last[i]}`;
+  tip.innerHTML = `<b>${T[i].name}</b><br>${fr.rec[i]} · ${T[i].div}<br>Pt diff ${M.pd.fmt(fr.pd[i])}<br>${fr.last[i]}`;
   tip.hidden = false;
   const b = board.getBoundingClientRect();
   let x = e.clientX - b.left + 14, y = e.clientY - b.top + 14;
