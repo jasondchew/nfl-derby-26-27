@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
 <style>
-/* Layout: one race track (rank-sorted lanes, horses run along a fixed scale), controls above, standings table + definitions below */
+/* Layout: controls, weekly movers strip, race track (rank-sorted lanes on a fixed scale), definitions, games to watch, highlights */
 :root {
   --bg: #f2f4ef; --surface: #fbfcf9; --lane: #e8ece4; --rule: #d2d9cf;
   --ink: #1b231e; --ink-2: #48554d; --muted: #7d8a82;
-  --accent: #2647c9; --accent-soft: #dfe5fb; --gold: #a77a06;
+  --accent: #2647c9; --accent-soft: #dfe5fb; --gold: #a77a06; --up: #2b7a4b; --down: #b13a2e;
   --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-label: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
@@ -21,11 +21,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #111613; --surface: #171e19; --lane: #1c241f; --rule: #2b352e;
   --ink: #e5ebe6; --ink-2: #a7b3ab; --muted: #6e7b73;
-  --accent: #8ba3ff; --accent-soft: #232c4d; --gold: #e2b94a; color-scheme: dark } }
+  --accent: #8ba3ff; --accent-soft: #232c4d; --gold: #e2b94a; --up: #6fcf97; --down: #f08a7e; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #111613; --surface: #171e19; --lane: #1c241f; --rule: #2b352e;
   --ink: #e5ebe6; --ink-2: #a7b3ab; --muted: #6e7b73;
-  --accent: #8ba3ff; --accent-soft: #232c4d; --gold: #e2b94a; color-scheme: dark }
+  --accent: #8ba3ff; --accent-soft: #232c4d; --gold: #e2b94a; --up: #6fcf97; --down: #f08a7e; color-scheme: dark }
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -77,6 +77,26 @@ h2 { font: 800 24px var(--f-display); text-transform: uppercase; margin: 8px 0 0
 .hl-links a { font: 600 13px var(--f-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); text-decoration: none; padding-block: 2px; }
 .hl-links a:hover { text-decoration: underline; }
 .hl-empty { color: var(--muted); font-size: 14px; }
+.hl-wp { margin: 0; font: 500 14px var(--f-label); letter-spacing: 0.02em; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.hl-wp b { color: var(--ink); font-weight: 600; }
+.movers { display: grid; gap: 8px; }
+.mv-cap { font: 500 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mv-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.mv { min-width: 0; border-top: 2px solid var(--rule); padding-top: 6px; }
+.mv-lbl { font: 600 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mv-main { font: 600 17px var(--f-label); letter-spacing: 0.01em; }
+.mv-main .arw.up { color: var(--up); }
+.mv-main .arw.down { color: var(--down); }
+.mv-sub { color: var(--ink-2); font-size: 14px; }
+.up-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.up-card { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; display: grid; gap: 2px; }
+.up-teams { font: 600 16px var(--f-label); letter-spacing: 0.01em; }
+.up-when { font: 500 13px var(--f-label); letter-spacing: 0.04em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.up-pick { font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.up-pick b { color: var(--ink); font-weight: 600; }
+abbr.term { text-decoration: underline dotted var(--muted); text-decoration-thickness: 1.5px; text-underline-offset: 3px; cursor: help; }
+abbr.term:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.gtip { position: fixed; z-index: 10; }
 footer { color: var(--muted); font-size: 13px; }
 footer a { color: var(--ink-2); }
 </style>
@@ -105,6 +125,11 @@ footer a { color: var(--ink-2); }
     <select id="follow" aria-label="Follow a team"><option value="">Follow a team…</option></select>
   </div>
 
+  <div class="movers" id="movers" hidden>
+    <span class="mv-cap" id="mvcap"></span>
+    <div class="mv-list" id="mvlist"></div>
+  </div>
+
   <div class="board" id="board">
     <div class="leader">
       <span class="lbl">In the lead</span><span class="who" id="lwho"></span><span class="val" id="lval"></span>
@@ -113,12 +138,19 @@ footer a { color: var(--ink-2); }
     <svg id="track" role="img" aria-label="Race track of all 32 teams"></svg>
     <div class="tip" id="tip" hidden></div>
   </div>
+  <div class="tip gtip" id="gtip" role="tooltip" hidden></div>
 
   <div class="defs">
     <div class="def"><h3>Point differential</h3><p>Points scored minus points allowed, added up game by game. Close games are close to coin flips, so margin tends to predict future wins better than record does.</p></div>
     <div class="def"><h3>Wins</h3><p>What the official standings use. Simple, but a 1-point win counts the same as a 30-point blowout, and early in the season lots of teams share the same record.</p></div>
     <div class="def"><h3>Strength-adjusted</h3><p>Each game becomes one equation: <code>home rating − away rating = margin</code>. With more games than teams there's no exact solution, so the ratings are the least-squares best fit (sum of ratings fixed at 0). Beating a strong team by 10 counts for more than beating a weak one by 10. It jumps around early in the season and settles as games pile up.</p></div>
   </div>
+
+  <section id="upsec" hidden>
+    <h2 id="uph">Games to watch</h2>
+    <p class="hl-sub" id="upsub"></p>
+    <div class="up-list" id="uplist"></div>
+  </section>
 
   <section class="hl">
     <h2 id="hlh">Highlights</h2>
@@ -294,6 +326,7 @@ function render(dt) {
   $("wk").textContent = Math.round(t) === 0 ? "Gate" : "Week " + Math.round(t);
   $("scrub").value = t;
   renderHighlights();
+  renderMovers();
   return moving;
 }
 
@@ -310,7 +343,7 @@ function renderHighlights() {
   } else {
     list = D.highlights.filter(h => h.week === k).sort((a, b) => b.score - a.score).slice(0, 9);
     head = `Week ${k} highlights`;
-    sub = "The biggest moments of the week, ranked by how much they swung the odds of winning. Follow a team to see its season.";
+    sub = "The biggest moments of the week, ranked by how much they changed each team's chance of winning. Follow a team to see its season.";
   }
   $("hlh").textContent = head; $("hlsub").textContent = sub;
   const cards = list.map(h => {
@@ -329,12 +362,144 @@ function renderHighlights() {
       const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener";
       a.textContent = label + " ↗"; links.append(a);
     });
-    c.append(meta, p, links);
+    c.append(meta, p);
+    if (h.wp) {
+      const w = document.createElement("p"); w.className = "hl-wp";
+      w.append(`${h.wp.team}' chance of winning: ${h.wp.before}% → `);
+      const b = document.createElement("b"); b.textContent = h.wp.after + "%"; w.append(b);
+      c.append(w);
+    }
+    c.append(links);
+    markTerms(c);
     return c;
   });
   if (!cards.length) { const e = document.createElement("p"); e.className = "hl-empty"; e.textContent = "No highlights yet."; cards.push(e); }
   $("hllist").replaceChildren(...cards);
+  markTerms($("hlsub"));
 }
+
+// ---- weekly movers (selected metric, week k vs k-1) ----
+const nickOf = Object.fromEntries(T.map(x => [x.abbr, x.nick]));
+const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+function frameOrder(fr) {
+  return T.map((_, i) => i).sort((a, b) => fr[metric][b] - fr[metric][a] || fr.pd[b] - fr.pd[a] || T[a].abbr.localeCompare(T[b].abbr));
+}
+function gameLine(k, i) {
+  const m = /^Wk \d+: ([WLT]) (\d+-\d+) (vs|@) (\w+)$/.exec(F[k].last[i]);
+  if (!m) return "Had the week off (a bye)";
+  return `${{W: "Beat", L: "Lost to", T: "Tied"}[m[1]]} the ${nickOf[m[4]]} ${m[2]}${m[3] === "@" ? " on the road" : " at home"}`;
+}
+let mvKey = "";
+function renderMovers() {
+  const k = Math.round(t), key = metric + k;
+  if (key === mvKey) return; mvKey = key;
+  const box = $("movers");
+  if (k < 2) { box.hidden = true; return; }
+  const cur = frameOrder(F[k]), prev = frameOrder(F[k - 1]);
+  const pos = o => o.reduce((a, i, p) => (a[i] = p, a), []);
+  const pc = pos(cur), pp = pos(prev);
+  const delta = T.map((_, i) => pp[i] - pc[i]);
+  const best = cmp => T.map((_, i) => i).sort((a, b) => cmp(a, b) || pc[a] - pc[b])[0];
+  const up = best((a, b) => delta[b] - delta[a]), down = best((a, b) => delta[a] - delta[b]);
+  const lead = cur[0], was = prev[0];
+  const item = (lbl, arrow, dir, main, i) => {
+    const d = document.createElement("div"); d.className = "mv";
+    const l = document.createElement("div"); l.className = "mv-lbl"; l.textContent = lbl;
+    const m = document.createElement("div"); m.className = "mv-main";
+    if (arrow) { const a = document.createElement("span"); a.className = "arw " + dir; a.textContent = arrow + " "; m.append(a); }
+    m.append(main);
+    const s = document.createElement("div"); s.className = "mv-sub"; s.textContent = gameLine(k, i);
+    d.append(l, m, s); markTerms(s); return d;
+  };
+  const items = [];
+  if (delta[up] > 0) items.push(item("Biggest climb", "▲" + delta[up], "up", `${T[up].nick} up to ${ordinal(pc[up] + 1)}`, up));
+  if (delta[down] < 0) items.push(item("Biggest drop", "▼" + -delta[down], "down", `${T[down].nick} down to ${ordinal(pc[down] + 1)}`, down));
+  items.push(item("On top", "", "", lead === was ? `${T[lead].nick} stayed 1st` : `${T[lead].nick} took 1st from the ${T[was].nick}`, lead));
+  $("mvcap").textContent = `Week ${k} movers, by ${M[metric].label.toLowerCase()}`;
+  $("mvlist").replaceChildren(...items);
+  box.hidden = false;
+}
+
+// ---- games to watch (built once from the latest ratings) ----
+function renderUpcoming() {
+  const U = D.upcoming || [];
+  if (!U.length) return;
+  const weeks = [...new Set(U.map(g => g.week))].sort((a, b) => a - b);
+  $("uph").textContent = "Games to watch: " + (weeks.length > 1 ? `Weeks ${weeks[0]}-${weeks[weeks.length - 1]}` : `Week ${weeks[0]}`);
+  $("upsub").textContent = "Closest matchups first, by the betting line: how many points the favorite is expected to win by.";
+  markTerms($("upsub"));
+  $("uplist").replaceChildren(...U.map(g => {
+    const c = document.createElement("article"); c.className = "up-card";
+    const tm = document.createElement("div"); tm.className = "up-teams";
+    tm.textContent = `${nickOf[g.away]} ${g.neutral ? "vs" : "at"} ${nickOf[g.home]}`;
+    const wh = document.createElement("div"); wh.className = "up-when"; wh.textContent = g.when + (g.neutral ? " · neutral site" : "");
+    const pk = document.createElement("div"); pk.className = "up-pick";
+    if (g.margin === null) pk.textContent = "No line yet";
+    else if (g.margin <= 1) pk.textContent = "Toss-up";
+    else { const b = document.createElement("b"); b.textContent = `${g.fav} by ${g.margin}`; pk.append("Favored: ", b); }
+    markTerms(pk);
+    c.append(tm, wh, pk); return c;
+  }));
+  $("upsec").hidden = false;
+}
+
+// ---- plain-English football terms ----
+const GLOSSARY = {
+  "touchdown": "Getting the ball into the other team's end zone. Worth 6 points, plus a try for 1 or 2 more.",
+  "field goal": "Kicking the ball through the goalposts. Worth 3 points.",
+  "interception": "A defender catches a pass meant for the offense, and his team takes over the ball.",
+  "fumble": "A player loses the ball before the play is over. Whichever team grabs it keeps it.",
+  "turnover": "The offense loses the ball to the other team, by an interception or a lost fumble.",
+  "4th down": "The offense gets 4 tries (downs) to move 10 yards. Fail on the 4th and the other team gets the ball right there.",
+  "sacked": "The quarterback is tackled behind the line before he can throw.",
+  "incomplete": "A pass nobody catches. The ball goes back to where the play started.",
+  "end zone": "The 10-yard scoring area at each end of the field.",
+  "bye": "A week off. Every team gets one during the season.",
+  "chance of winning": "A model's estimate of how likely a team is to win, based on the score, time left, and field position. nflverse calculates it before and after every play.",
+  "betting line": "The point spread set by sportsbooks. It's the market's best guess at the final margin, and it updates as news comes in. A guide, not a sure thing.",
+  "toss-up": "The betting line has these teams within a point of each other.",
+  "least-squares": "Choosing the ratings that miss the real results by as little as possible overall (it minimizes the sum of the squared misses).",
+};
+const ALIAS = { "intercepted": "interception", "fumbled": "fumble" };
+const TERM_SRC = "\\b(" + [...Object.keys(GLOSSARY), ...Object.keys(ALIAS)].sort((a, b) => b.length - a.length).join("|") + ")\\b";
+function markTerms(el) {
+  const seen = new Set(), nodes = [];
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT,
+    { acceptNode: n => n.parentElement.closest("code, abbr, a") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  while (w.nextNode()) nodes.push(w.currentNode);
+  for (const node of nodes) {
+    const text = node.nodeValue, re = new RegExp(TERM_SRC, "gi"), frag = document.createDocumentFragment();
+    let last = 0, m, changed = false;
+    while ((m = re.exec(text))) {
+      const key = m[1].toLowerCase(), canon = ALIAS[key] || key;
+      if (seen.has(canon)) continue;
+      seen.add(canon); changed = true;
+      frag.append(text.slice(last, m.index));
+      const ab = document.createElement("abbr"); ab.className = "term"; ab.tabIndex = 0;
+      ab.dataset.tip = GLOSSARY[canon]; ab.textContent = m[1]; frag.append(ab);
+      last = m.index + m[1].length;
+    }
+    if (changed) { frag.append(text.slice(last)); node.replaceWith(frag); }
+  }
+}
+const gtip = $("gtip");
+let pinned = null;
+function showTerm(a) {
+  gtip.textContent = a.dataset.tip; gtip.hidden = false;
+  const r = a.getBoundingClientRect(), wd = gtip.offsetWidth, ht = gtip.offsetHeight;
+  gtip.style.left = Math.max(8, Math.min(r.left, innerWidth - wd - 8)) + "px";
+  gtip.style.top = (r.bottom + 6 + ht > innerHeight ? r.top - ht - 6 : r.bottom + 6) + "px";
+}
+function hideTerm() { gtip.hidden = true; pinned = null; }
+document.addEventListener("pointerover", e => { const a = e.target.closest && e.target.closest("abbr.term"); if (a && !pinned) showTerm(a); });
+document.addEventListener("pointerout", e => { if (!pinned && e.target.closest && e.target.closest("abbr.term")) gtip.hidden = true; });
+document.addEventListener("focusin", e => { if (e.target.matches("abbr.term")) showTerm(e.target); });
+document.addEventListener("focusout", e => { if (e.target.matches("abbr.term")) hideTerm(); });
+document.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest("abbr.term");
+  if (a) { if (pinned === a) hideTerm(); else { pinned = a; showTerm(a); } } else if (pinned) hideTerm();
+});
+addEventListener("scroll", () => { if (!gtip.hidden) hideTerm(); }, { passive: true });
 
 function tick(ts) {
   const dt = lastTs ? Math.min(64, ts - lastTs) : 16; lastTs = ts;
@@ -384,6 +549,8 @@ $("play").addEventListener("click", () => {
 });
 $("scrub").addEventListener("input", e => { playing = false; t = +e.target.value; setPlayLabel(); kick(); });
 new ResizeObserver(() => { layout(); kick(); }).observe(svg);
+document.querySelectorAll(".def p").forEach(markTerms);
+renderUpcoming();
 setMetric("pd"); setPlayLabel();
 </script>
 </body>

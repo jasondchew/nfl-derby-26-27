@@ -5,6 +5,7 @@ Run after fetch_data.py:
 Writes docs/index.html (race_template.html with the data filled in), served by GitHub Pages.
 """
 import json
+from datetime import date
 from urllib.parse import quote_plus
 from pathlib import Path
 
@@ -70,6 +71,24 @@ def build_highlights(games, nick):
             return name(play, "receiver")
         return name(play, "passer")
 
+    def chance(helped, before_play, after_play, helped_had_ball):
+        """Win chance for `helped` before before_play and after after_play, as whole percents."""
+        b, a = before_play["wp"], after_play["wp"] + after_play["wpa"]
+        if pd.isna(b) or pd.isna(a):
+            return None
+        if not helped_had_ball[0]:
+            b = 1 - b
+        if not helped_had_ball[1]:
+            a = 1 - a
+        return {"team": nick[helped], "before": round(b * 100), "after": round(min(max(a, 0), 1) * 100)}
+
+    def single(play):
+        """Win chance change for whichever team the play helped."""
+        if pd.isna(play["wpa"]):
+            return None
+        off = play["wpa"] >= 0
+        return chance(play["posteam"] if off else play["defteam"], play, play, (off, off))
+
     def describe(play):
         yds = int(play["yards_gained"]) if pd.notna(play["yards_gained"]) else 0
         td = play["touchdown"] == 1
@@ -116,7 +135,8 @@ def build_highlights(games, nick):
                 what = f"{name(tp, 'fumble_recovery_1')} recovered a fumble by {name(tp, 'fumbled_1')}"
             if tp["return_touchdown"] == 1:
                 cands.append((abs(tp["wpa"]) + 0.2, {idx}, tp, "Defensive TD",
-                              f"{what} and took it back for a {nick[dfn]} touchdown.", [off, dfn]))
+                              f"{what} and took it back for a {nick[dfn]} touchdown.", [off, dfn],
+                              chance(dfn, tp, tp, (False, False))))
                 continue
             nxt = g[(g.fixed_drive == tp["fixed_drive"] + 1) & (g.posteam == dfn)]
             if nxt.empty or nxt.fixed_drive_result.iloc[0] != "Touchdown":
@@ -130,7 +150,8 @@ def build_highlights(games, nick):
             later = "on the next play" if snaps <= 1 else f"{snaps} plays later"
             short = f" They started {start} yards from the end zone." if start <= 35 else ""
             cands.append((abs(tp["wpa"]) + abs(tdp["wpa"]) + 0.15, {idx, tdp.name}, tp, "Turnover → TD",
-                          f"{nick[off]} turnover: {what}, and {later} {describe(tdp)}.{short}", [off, dfn]))
+                          f"{nick[off]} turnover: {what}, and {later} {describe(tdp)}.{short}", [off, dfn],
+                          chance(dfn, tp, tdp, (False, True))))
 
         # biggest win-probability swing in the game
         sw = scrimmage.dropna(subset=["wpa"])
@@ -143,18 +164,18 @@ def build_highlights(games, nick):
                 diff = int(bp["score_differential"])
                 sit = ("With the game tied" if diff == 0
                        else f"With the {nick[bp['posteam']]} {'up' if diff > 0 else 'down'} {abs(diff)}")
-                cands.append((abs(bp["wpa"]), {idx}, bp, "Biggest swing",
-                              f"{sit}, {d}.", [bp["posteam"], bp["defteam"]]))
+                cands.append((abs(bp["wpa"]), {idx}, bp, "Turning point",
+                              f"{sit}, {d}.", [bp["posteam"], bp["defteam"]], single(bp)))
 
         # long touchdowns
         for idx, lp in scrimmage[(scrimmage.touchdown == 1) & (scrimmage.yards_gained >= 40)
                                  & (scrimmage.td_team == scrimmage.posteam)].iterrows():
             cands.append((lp["yards_gained"] / 250, {idx}, lp, "Long TD",
                           f"{nick[lp['posteam']]}: {describe(lp)}.",
-                          [lp["posteam"], lp["defteam"]]))
+                          [lp["posteam"], lp["defteam"]], single(lp)))
 
         picked = 0
-        for sc, ids, play, kind, text, tms in sorted(cands, key=lambda c: -c[0]):
+        for sc, ids, play, kind, text, tms, wp in sorted(cands, key=lambda c: -c[0]):
             if ids & used or picked == 2:
                 continue
             used |= ids
@@ -163,8 +184,31 @@ def build_highlights(games, nick):
             out.append({"week": int(gm.week), "game": score, "teams": tms, "kind": kind,
                         "when": when(play), "text": text.replace("..", "."), "score": round(float(sc), 3),
                         "clip": "https://www.youtube.com/results?search_query=" + quote_plus(q),
-                        "recap": recap})
+                        "recap": recap, "wp": wp})
     return out
+
+
+def build_upcoming(reg, nick):
+    """Unplayed games in the next 8 days, with the favorite from the betting line.
+
+    spread_line is from the home team's side: +3 means the home team is favored by 3.
+    """
+    today = pd.Timestamp(date.today())
+    soon = reg[reg.home_score.isna()].copy()
+    soon["day"] = pd.to_datetime(soon.gameday)
+    soon = soon[(soon.day >= today) & (soon.day < today + pd.Timedelta(days=8))]
+    out = []
+    for g in soon.itertuples():
+        h, m = map(int, str(g.gametime).split(":"))
+        kick = f"{(h - 1) % 12 + 1}:{m:02d} {'PM' if h >= 12 else 'AM'} ET"
+        line = None if pd.isna(g.spread_line) else float(g.spread_line)
+        out.append({
+            "week": int(g.week), "away": g.away_team, "home": g.home_team,
+            "when": f"{g.day:%a %b} {g.day.day}, {kick}", "neutral": g.location == "Neutral",
+            "fav": None if line is None else nick[g.home_team if line > 0 else g.away_team],
+            "margin": None if line is None else abs(line),
+        })
+    return sorted(out, key=lambda x: (x["margin"] is None, x["margin"] or 0))
 
 
 def main():
@@ -185,6 +229,7 @@ def main():
         "rec": ["0-0"] * len(abbrs), "last": ["Starting gate"] * len(abbrs),
     }]
     for wk in range(1, last_week + 1):
+        played_now = set()
         for g in played[played.week == wk].itertuples():
             for us, them, pf, pa, at in [
                 (g.home_team, g.away_team, g.home_score, g.away_score, "vs"),
@@ -195,13 +240,14 @@ def main():
                 wlt[us]["WLT".index(res)] += 1
                 pd_[us] += int(pf - pa)
                 last[us] = f"Wk {wk}: {res} {int(pf)}-{int(pa)} {at} {them}"
+                played_now.add(us)
         srs = strength_ratings(played[played.week <= wk], abbrs)
         frames.append({
             "wins": [wins[a] for a in abbrs],
             "pd": [pd_[a] for a in abbrs],
             "srs": [srs[a] for a in abbrs],
             "rec": ["-".join(map(str, wlt[a][:2])) + (f"-{wlt[a][2]}" if wlt[a][2] else "") for a in abbrs],
-            "last": [last[a] or f"Wk {wk}: bye" for a in abbrs],
+            "last": [last[a] if a in played_now else f"Wk {wk}: bye" for a in abbrs],
         })
 
     wk_games = reg[reg.week == last_week]
@@ -211,13 +257,14 @@ def main():
     data = {
         "updated": str(played.gameday.max()),
         "status": status,
-        "teams": [{"abbr": t.team_abbr, "name": t.team_name, "div": t.division,
+        "teams": [{"abbr": t.team_abbr, "name": t.team_name, "nick": t.team_nick, "div": t.division,
                    # helmet shell + stripe; black stripes vanish on a dark shell, so fall back to color 3
                    "c1": t.team_color,
                    "c2": t.team_color3 if t.team_color2.lower() == "#000000" else t.team_color2}
                   for t in teams.itertuples()],
         "frames": frames,
         "highlights": build_highlights(games, nick),
+        "upcoming": build_upcoming(reg, nick),
     }
     html = (HERE / "race_template.html").read_text(encoding="utf-8")
     (HERE / "docs").mkdir(exist_ok=True)

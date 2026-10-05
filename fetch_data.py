@@ -18,8 +18,8 @@ def main():
     games = pd.read_csv(GAMES_URL)
     games = games[games.season == SEASON].rename(columns={"espn": "espn_game_id"})
     games = games[[
-        "game_id", "week", "game_type", "gameday", "away_team", "home_team",
-        "away_score", "home_score", "espn_game_id",
+        "game_id", "week", "game_type", "gameday", "weekday", "gametime", "location", "away_team", "home_team",
+        "away_score", "home_score", "spread_line", "espn_game_id",
     ]]
 
     abbrs = set(games.home_team) | set(games.away_team)
