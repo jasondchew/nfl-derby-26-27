@@ -211,7 +211,10 @@ def main():
     data = {
         "updated": str(played.gameday.max()),
         "status": status,
-        "teams": [{"abbr": t.team_abbr, "name": t.team_name, "div": t.division}
+        "teams": [{"abbr": t.team_abbr, "name": t.team_name, "div": t.division,
+                   # helmet shell + stripe; black stripes vanish on a dark shell, so fall back to color 3
+                   "c1": t.team_color,
+                   "c2": t.team_color3 if t.team_color2.lower() == "#000000" else t.team_color2}
                   for t in teams.itertuples()],
         "frames": frames,
         "highlights": build_highlights(games, nick),

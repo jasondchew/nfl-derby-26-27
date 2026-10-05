@@ -31,7 +31,7 @@ def build_teams(current_abbrs):
     t = pd.read_csv(f"{RELEASES}/teams/teams_colors_logos.csv")
     t = t[t.team_abbr.isin(current_abbrs)]  # drop relocated franchises (OAK, SD, STL, LAR dup)
     return t.rename(columns={"team_conf": "conference", "team_division": "division"})[
-        ["team_abbr", "team_name", "team_nick", "conference", "division"]
+        ["team_abbr", "team_name", "team_nick", "conference", "division", "team_color", "team_color2", "team_color3"]
     ]
 
 

@@ -140,7 +140,7 @@ const M = {
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const NS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);
-const MS_PER_WEEK = 1700, LANE = 22, TOP = 26, RANKW = 30, LABELW = 92;
+const MS_PER_WEEK = 1700, LANE = 22, TOP = 26, RANKW = 30, LABELW = 112, HELM = 18;
 
 let metric = "pd", t = W, playing = false, sel = null, raf = 0, lastTs = 0;
 let ys = null, geo = null;
@@ -204,12 +204,26 @@ const lanes = T.map((tm, i) => {
   const ab = document.createElementNS(NS, "tspan"); ab.textContent = tm.abbr; ab.setAttribute("font-weight", 600);
   const vv = document.createElementNS(NS, "tspan"); vv.setAttribute("fill", "var(--muted)"); vv.setAttribute("dx", 5);
   lbl.append(ab, vv);
-  g.append(hit, trail, horse, lbl);
+  // helmet facing right (the direction of the race), drawn in a 16x13 box
+  const helm = document.createElementNS(NS, "g");
+  const shell = document.createElementNS(NS, "path");
+  shell.setAttribute("d", "M1 8.2C1 3.8 4 1 8.4 1 12.6 1 15 3.6 15 7.2V8.6H10.6V12H3.6C2 12 1 10.4 1 8.2Z");
+  shell.setAttribute("fill", tm.c1); shell.setAttribute("stroke", "var(--muted)"); shell.setAttribute("stroke-width", 0.6);
+  const stripe = document.createElementNS(NS, "path");
+  stripe.setAttribute("d", "M4.2 2.6C7 1.2 10.4 1.1 13.2 2.8");
+  stripe.setAttribute("fill", "none"); stripe.setAttribute("stroke", tm.c2); stripe.setAttribute("stroke-width", 1.6); stripe.setAttribute("stroke-linecap", "round");
+  const mask = document.createElementNS(NS, "path");
+  mask.setAttribute("d", "M10.6 8.6H16.4M12.4 8.6V12M16.4 8.6V11.2M10.6 10.6H16");
+  mask.setAttribute("fill", "none"); mask.setAttribute("stroke", "var(--ink-2)"); mask.setAttribute("stroke-width", 1); mask.setAttribute("stroke-linecap", "round");
+  const ear = document.createElementNS(NS, "circle");
+  ear.setAttribute("cx", 6.4); ear.setAttribute("cy", 7.6); ear.setAttribute("r", 1); ear.setAttribute("fill", "var(--surface)");
+  helm.append(shell, stripe, mask, ear);
+  g.append(hit, trail, horse, helm, lbl);
   g.addEventListener("pointermove", e => showTip(i, e));
   g.addEventListener("pointerleave", hideTip);
   g.addEventListener("click", e => { setSel(sel === i ? null : i); showTip(i, e); });
   gLanes.append(g);
-  return { g, hit, trail, horse, lbl, ab, vv };
+  return { g, hit, trail, horse, helm, lbl, ab, vv };
 });
 
 function layout() {
@@ -265,7 +279,9 @@ function render(dt) {
     L.horse.setAttribute("r", isSel || lead ? 7 : 6);
     L.horse.setAttribute("opacity", dim ? 0.45 : 1);
     const neg = v[i] < 0;
-    L.lbl.setAttribute("x", neg ? X - 11 : X + 11);
+    L.helm.setAttribute("transform", `translate(${neg ? X - 10 - HELM : X + 10} -6.5)`);
+    L.helm.setAttribute("opacity", dim ? 0.45 : 1);
+    L.lbl.setAttribute("x", neg ? X - 12 - HELM : X + 12 + HELM);
     L.lbl.setAttribute("text-anchor", neg ? "end" : "start");
     L.ab.setAttribute("fill", isSel ? "var(--accent)" : "var(--ink)");
     L.lbl.setAttribute("opacity", dim ? 0.5 : 1);
