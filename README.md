@@ -1,52 +1,41 @@
 # NFL Derby 26-27
 
-**Live page: https://jasondchew.github.io/nfl-derby-26-27/**
+**Open it: https://jasondchew.github.io/nfl-derby-26-27/**
 
-An animated, week-by-week race of all 32 NFL teams in the 2026-27 season, plus game highlights generated from play-by-play data. You can rank teams three ways: wins, point differential, or a strength-adjusted rating (a least-squares fit where each game is one equation, `home rating − away rating = margin`).
+Follow the 2026-27 NFL season as a horse race. All 32 teams run week by week, and you can watch who pulls ahead, who fades, and how each game moved them.
 
-The page updates itself. A GitHub Action runs every morning, pulls the latest data from [nflverse](https://github.com/nflverse), rebuilds the CSVs and the page, and commits only when something changed.
+## What you can do
 
-## How it works
+- **Play the race** from Week 1, or drag the slider to any week.
+- **Choose what "best" means.** Rank teams by wins, by point differential, or by a strength-adjusted rating that gives more credit for beating good teams. The leader often changes depending on which you pick.
+- **Follow your team.** Their lane lights up and the highlights switch to their season so far.
+- **Read the highlights.** Every game gets its biggest moments, like a turnover that set up a touchdown or a late swing that decided it. Each one links to a search for the clip and to the full game recap.
+- **Hover or tap any team** for its record, point differential and last result.
 
-| Step | File | What it does |
-|---|---|---|
-| 1 | `build_nfl_csvs.py` | Downloads schedule, rosters, player stats and injuries; trims them into 5 tidy CSVs in `data/` |
-| 2 | `build_race.py` | Computes cumulative standings and ratings for each week, writes highlights from play-by-play, fills `race_template.html` into `docs/index.html` |
-| 3 | `.github/workflows/refresh.yml` | Runs steps 1 and 2 daily; GitHub Pages serves `docs/` |
+## Always current
 
-Run locally: `pip install -r requirements.txt`, then `python build_nfl_csvs.py && python build_race.py`.
+The page updates itself every morning during the season. A scheduled GitHub Action pulls the latest results and play-by-play from [nflverse](https://github.com/nflverse), rebuilds the page, and publishes it. No one has to touch it.
 
-Highlights are written from structured play fields (players, yards, win probability added) using templates, so every sentence traces back to a recorded play.
+## How the strength rating works
 
----
+Every game becomes one equation: `home rating − away rating = final margin`. A few weeks in, there are more games than teams, so no set of ratings fits every game exactly. The ratings are the least-squares best fit, with the average team pinned at 0. A rating of +7 means "about a touchdown better than an average team." It jumps around early and settles as games pile up.
 
-# SQL practice data
+## Run it yourself
 
-## Tables (`data/`)
+```
+pip install -r requirements.txt
+python fetch_data.py
+python build_race.py
+```
 
-| File | Grain (one row per...) | Key columns |
-|---|---|---|
-| `teams.csv` | team (32) | `team_abbr` |
-| `games.csv` | game (all 272, including future ones) | `game_id`, `home_team`, `away_team` |
-| `players.csv` | player on a 2026 roster | `player_id`, `team_abbr` |
-| `player_game_stats.csv` | player per game they recorded a stat in | `player_id`, `game_id`, `team_abbr`, `opponent_abbr` |
-| `injury_reports.csv` | player per week on the injury report | `player_id`, `week`, `team_abbr` |
+Then open `docs/index.html`. To track a different season, change `SEASON` at the top of both scripts.
 
-## How they connect
+| File | Job |
+|---|---|
+| `fetch_data.py` | Downloads the schedule, team colors and player names into `data/` |
+| `build_race.py` | Works out each week's standings and ratings, writes highlights from play-by-play, and fills `race_template.html` into `docs/index.html` |
+| `.github/workflows/refresh.yml` | Runs both scripts every morning and publishes any changes |
 
-- `games.home_team` / `games.away_team` → `teams.team_abbr` (two separate joins; you'll need to pick these manually in the Tutor since the names don't match)
-- `player_game_stats.player_id` → `players.player_id`
-- `player_game_stats.game_id` → `games.game_id`
-- `injury_reports.player_id` → `players.player_id`
+Highlights are built from recorded play data (players, yards, how much each play changed the odds of winning), so every sentence traces back to a real play.
 
-## Things to know (good SQL practice in themselves)
-
-- **Future games have NULL scores.** Filter with `home_score IS NOT NULL` for completed games.
-- **No winner column.** You derive it: `CASE WHEN home_score > away_score THEN home_team ...` (ties are possible).
-- **`spread_line`** is from the home team's view: positive = home team favored by that many points. `total_line` is the over/under.
-- **`location = 'Neutral'`** marks international/neutral-site games (e.g., the Week 1 SF-LA game in Melbourne).
-- **`players.team_abbr` is the current team**, while `player_game_stats.team_abbr` is the team they played for *in that game*. A traded player shows the difference.
-- **`players.status`**: ACT active, RES reserve/IR, DEV practice squad, CUT released, INA inactive, RET retired.
-- **`injury_reports.report_status`** is NULL when a player was listed for practice but carried no game designation.
-- **`passing_epa` / `rushing_epa`**: expected points added; above 0 means the play helped more than an average play would.
-- `fantasy_points_ppr` uses standard PPR scoring.
+Data: [nflverse](https://github.com/nflverse), CC-BY 4.0. Not affiliated with the NFL.

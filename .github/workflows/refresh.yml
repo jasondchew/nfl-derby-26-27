@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: python build_nfl_csvs.py
+      - run: python fetch_data.py
       - run: python build_race.py
       - name: Commit if anything changed
         run: |

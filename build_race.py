@@ -1,6 +1,6 @@
 """Turn data/games.csv into the week-by-week standings the derby animation plays.
 
-Run after build_nfl_csvs.py:
+Run after fetch_data.py:
     python build_race.py
 Writes docs/index.html (race_template.html with the data filled in), served by GitHub Pages.
 """
