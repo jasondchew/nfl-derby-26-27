@@ -80,6 +80,9 @@ tr.sel td { background: var(--accent-soft); }
 .hl-kind.to { color: var(--accent); background: var(--accent-soft); }
 .hl-game { color: var(--ink-2); font-weight: 600; }
 .hl-card p { margin: 0; font-size: 14px; }
+.hl-links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.hl-links a { font: 600 13px var(--f-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); text-decoration: none; padding-block: 2px; }
+.hl-links a:hover { text-decoration: underline; }
 .hl-empty { color: var(--muted); font-size: 14px; }
 footer { color: var(--muted); font-size: 13px; }
 footer a { color: var(--ink-2); }
@@ -323,7 +326,13 @@ function renderHighlights() {
     const when = document.createElement("span"); when.textContent = h.when;
     meta.append(kind, game, when);
     const p = document.createElement("p"); p.textContent = h.text;
-    c.append(meta, p);
+    const links = document.createElement("div"); links.className = "hl-links";
+    [["Find the clip", h.clip], ["Game recap", h.recap]].forEach(([label, href]) => {
+      if (!href) return;
+      const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = label + " ↗"; links.append(a);
+    });
+    c.append(meta, p, links);
     return c;
   });
   if (!cards.length) { const e = document.createElement("p"); e.className = "hl-empty"; e.textContent = "No highlights yet."; cards.push(e); }

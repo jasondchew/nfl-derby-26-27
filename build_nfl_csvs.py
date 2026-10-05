@@ -21,8 +21,9 @@ def build_games():
         "away_team", "home_team", "away_score", "home_score", "overtime",
         "location", "div_game", "spread_line", "total_line",
         "away_qb_name", "home_qb_name", "away_coach", "home_coach",
-        "roof", "surface", "temp", "wind", "stadium",
+        "roof", "surface", "temp", "wind", "stadium", "espn_game_id",
     ]
+    g = g.rename(columns={"espn": "espn_game_id"})
     return g[cols], set(g.home_team) | set(g.away_team)
 
 

@@ -5,6 +5,7 @@ Run after build_nfl_csvs.py:
 Writes docs/index.html (race_template.html with the data filled in), served by GitHub Pages.
 """
 import json
+from urllib.parse import quote_plus
 from pathlib import Path
 
 import numpy as np
@@ -55,6 +56,20 @@ def build_highlights(games, nick):
         q = int(play["qtr"])
         return f"{'OT' if q == 5 else f'Q{q}'} {play['time']}"
 
+    def star(play):
+        """The player a video title would most likely name."""
+        if play["interception"] == 1:
+            return name(play, "interception")
+        if play["fumble_lost"] == 1:
+            return name(play, "fumble_recovery_1")
+        if play["play_type"] == "field_goal":
+            return name(play, "kicker")
+        if play["play_type"] == "run":
+            return name(play, "rusher")
+        if play["complete_pass"] == 1:
+            return name(play, "receiver")
+        return name(play, "passer")
+
     def describe(play):
         yds = int(play["yards_gained"]) if pd.notna(play["yards_gained"]) else 0
         td = play["touchdown"] == 1
@@ -87,6 +102,8 @@ def build_highlights(games, nick):
             continue
         gm = gmeta.loc[gid]
         score = f"{gm.away_team} {int(gm.away_score)} @ {gm.home_team} {int(gm.home_score)}"
+        recap = (f"https://www.espn.com/nfl/game/_/gameId/{int(gm.espn_game_id)}"
+                 if pd.notna(gm.espn_game_id) else None)
         cands, used = [], set()
         scrimmage = g[g.play_type.isin(["pass", "run"])]
 
@@ -142,8 +159,11 @@ def build_highlights(games, nick):
                 continue
             used |= ids
             picked += 1
+            q = f"{star(play)} {nick[gm.away_team]} vs {nick[gm.home_team]} week {int(gm.week)} {SEASON}"
             out.append({"week": int(gm.week), "game": score, "teams": tms, "kind": kind,
-                        "when": when(play), "text": text.replace("..", "."), "score": round(float(sc), 3)})
+                        "when": when(play), "text": text.replace("..", "."), "score": round(float(sc), 3),
+                        "clip": "https://www.youtube.com/results?search_query=" + quote_plus(q),
+                        "recap": recap})
     return out
 
 
