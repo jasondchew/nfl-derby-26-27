@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
 <style>
-/* Layout: controls, weekly movers strip, race track (rank-sorted lanes on a fixed scale), definitions, games to watch, highlights */
+/* Layout: controls, weekly movers strip, race track (rank-sorted lanes on a fixed scale), definitions, highlights, games to watch */
 :root {
   --bg: #f2f4ef; --surface: #fbfcf9; --lane: #e8ece4; --rule: #d2d9cf;
   --ink: #1b231e; --ink-2: #48554d; --muted: #7d8a82;
@@ -146,16 +146,16 @@ footer a { color: var(--ink-2); }
     <div class="def"><h3>Strength-adjusted</h3><p>Each game becomes one equation: <code>home rating − away rating = margin</code>. With more games than teams there's no exact solution, so the ratings are the least-squares best fit (sum of ratings fixed at 0). Beating a strong team by 10 counts for more than beating a weak one by 10. It jumps around early in the season and settles as games pile up.</p></div>
   </div>
 
-  <section id="upsec" hidden>
-    <h2 id="uph">Games to watch</h2>
-    <p class="hl-sub" id="upsub"></p>
-    <div class="up-list" id="uplist"></div>
-  </section>
-
   <section class="hl">
     <h2 id="hlh">Highlights</h2>
     <p class="hl-sub" id="hlsub"></p>
     <div class="hl-list" id="hllist"></div>
+  </section>
+
+  <section id="upsec" hidden>
+    <h2 id="uph">Games to watch</h2>
+    <p class="hl-sub" id="upsub"></p>
+    <div class="up-list" id="uplist"></div>
   </section>
 
   <footer id="foot"></footer>
