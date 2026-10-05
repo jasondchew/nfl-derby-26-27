@@ -1,0 +1,32 @@
+name: Refresh NFL data
+
+on:
+  schedule:
+    - cron: "0 13 * * *"  # daily, 6am Pacific (nflverse updates overnight)
+  workflow_dispatch:       # "Run workflow" button for a manual refresh
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python build_nfl_csvs.py
+      - run: python build_race.py
+      - name: Commit if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data docs
+          if git diff --cached --quiet; then
+            echo "No new data."
+          else
+            git commit -m "Refresh NFL data"
+            git push
+          fi

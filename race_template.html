@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Week-by-week race of all 32 NFL teams in the 2026 season, with game highlights. Updates daily.">
+<title>NFL Derby 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: one race track (rank-sorted lanes, horses run along a fixed scale), controls above, standings table + definitions below */
+:root {
+  --bg: #f2f4ef; --surface: #fbfcf9; --lane: #e8ece4; --rule: #d2d9cf;
+  --ink: #1b231e; --ink-2: #48554d; --muted: #7d8a82;
+  --accent: #2647c9; --accent-soft: #dfe5fb; --gold: #a77a06;
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-label: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111613; --surface: #171e19; --lane: #1c241f; --rule: #2b352e;
+  --ink: #e5ebe6; --ink-2: #a7b3ab; --muted: #6e7b73;
+  --accent: #8ba3ff; --accent-soft: #232c4d; --gold: #e2b94a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111613; --surface: #171e19; --lane: #1c241f; --rule: #2b352e;
+  --ink: #e5ebe6; --ink-2: #a7b3ab; --muted: #6e7b73;
+  --accent: #8ba3ff; --accent-soft: #232c4d; --gold: #e2b94a; color-scheme: dark }
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; }
+h1 { font: 800 clamp(34px, 6vw, 52px)/0.95 var(--f-display); letter-spacing: 0.01em; margin: 0; text-transform: uppercase; text-wrap: balance; }
+.sub { color: var(--ink-2); margin: 6px 0 0; }
+.status { font: 500 13px var(--f-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); text-align: right; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { font: 600 14px var(--f-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); background: none; border: 0; padding: 8px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.play { font: 600 14px var(--f-label); letter-spacing: 0.06em; text-transform: uppercase; background: var(--accent); color: var(--surface); border: 0; border-radius: 8px; padding: 9px 16px; cursor: pointer; min-width: 112px; }
+.scrub { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0; }
+.scrub input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.wk { font: 800 22px var(--f-display); text-transform: uppercase; min-width: 7.5ch; font-variant-numeric: tabular-nums; }
+select { font: 500 14px var(--f-body); color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 7px 8px; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.board { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 12px 10px; position: relative; }
+.leader { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; padding: 0 4px 10px; border-bottom: 1px solid var(--rule); margin-bottom: 6px; }
+.leader .lbl { font: 500 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.leader .who { font: 800 24px var(--f-display); text-transform: uppercase; }
+.leader .val { font: 600 16px var(--f-label); color: var(--gold); font-variant-numeric: tabular-nums; }
+.metric-note { color: var(--ink-2); font-size: 13px; margin-left: auto; }
+svg { display: block; width: 100%; }
+svg text { font-family: var(--f-label); font-variant-numeric: tabular-nums; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.4; max-width: 240px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
+.tip b { font: 700 15px var(--f-label); letter-spacing: 0.02em; }
+
+h2 { font: 800 24px var(--f-display); text-transform: uppercase; margin: 8px 0 0; }
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.def { min-width: 0; }
+.def h3 { font: 600 15px var(--f-label); letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 4px; }
+.def p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 65ch; }
+.def code { font: 500 13px ui-monospace, Consolas, monospace; background: var(--lane); padding: 1px 4px; border-radius: 4px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+th { font: 600 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule); }
+td { padding: 5px 10px; text-align: right; border-bottom: 1px solid var(--lane); }
+th:nth-child(2), td:nth-child(2) { text-align: left; }
+tr.sel td { background: var(--accent-soft); }
+.sorted { color: var(--ink); }
+.hl-sub { color: var(--ink-2); margin: 2px 0 12px; font-size: 14px; }
+.hl-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.hl-card { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+.hl-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font: 500 13px var(--f-label); letter-spacing: 0.04em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hl-kind { font: 600 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: var(--lane); border-radius: 4px; padding: 2px 6px; }
+.hl-kind.to { color: var(--accent); background: var(--accent-soft); }
+.hl-game { color: var(--ink-2); font-weight: 600; }
+.hl-card p { margin: 0; font-size: 14px; }
+.hl-empty { color: var(--muted); font-size: 14px; }
+footer { color: var(--muted); font-size: 13px; }
+footer a { color: var(--ink-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>NFL Derby 2026</h1>
+      <p class="sub">Every team racing week by week. Pick what "best" means and watch the lead change.</p>
+    </div>
+    <div class="status" id="status"></div>
+  </header>
+
+  <div class="controls">
+    <button class="play" id="play" type="button">Play race</button>
+    <div class="scrub">
+      <span class="wk" id="wk">Week 0</span>
+      <input id="scrub" type="range" min="0" step="0.01" aria-label="Week">
+    </div>
+    <div class="seg" role="group" aria-label="Best team by">
+      <button type="button" data-m="pd">Point diff</button>
+      <button type="button" data-m="wins">Wins</button>
+      <button type="button" data-m="srs">Strength-adj.</button>
+    </div>
+    <select id="follow" aria-label="Follow a team"><option value="">Follow a team…</option></select>
+  </div>
+
+  <div class="board" id="board">
+    <div class="leader">
+      <span class="lbl">In the lead</span><span class="who" id="lwho"></span><span class="val" id="lval"></span>
+      <span class="metric-note" id="mnote"></span>
+    </div>
+    <svg id="track" role="img" aria-label="Race track of all 32 teams"></svg>
+    <div class="tip" id="tip" hidden></div>
+  </div>
+
+  <section class="hl">
+    <h2 id="hlh">Highlights</h2>
+    <p class="hl-sub" id="hlsub"></p>
+    <div class="hl-list" id="hllist"></div>
+  </section>
+
+  <section>
+    <h2>Three ways to define "best"</h2>
+    <div class="defs">
+      <div class="def"><h3>Wins</h3><p>What the official standings use. Simple, but a 1-point win counts the same as a 30-point blowout, and four weeks in, half the league is tied with someone.</p></div>
+      <div class="def"><h3>Point differential</h3><p>Points scored minus points allowed, added up game by game. Close games are close to coin flips, so margin tends to predict future wins better than record does.</p></div>
+      <div class="def"><h3>Strength-adjusted</h3><p>Each game becomes one equation: <code>home rating − away rating = margin</code>. With more games than teams there's no exact solution, so the ratings are the least-squares best fit (sum of ratings fixed at 0). Beating a strong team by 10 counts for more than beating a weak one by 10. Expect it to jump around this early in the season.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="tblh">Standings</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>#</th><th>Team</th><th>Record</th><th data-m="pd">Pt diff</th><th data-m="srs">Strength</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const D = /*__DATA__*/null;
+const T = D.teams, F = D.frames, W = F.length - 1, N = T.length;
+const M = {
+  pd:   { label: "Point differential", fmt: v => (v > 0 ? "+" : "") + Math.round(v), round: v => Math.round(v), note: "Distance from the starting gate = total points scored minus allowed" },
+  wins: { label: "Wins", fmt: v => String(Math.round(v * 2) / 2), round: v => Math.round(v * 2) / 2, note: "Distance from the starting gate = wins (ties count as half)" },
+  srs:  { label: "Strength-adjusted rating", fmt: v => (v > 0 ? "+" : "") + v.toFixed(1), round: v => Math.round(v * 10) / 10, note: "Distance = rating, in points better or worse than an average team" },
+};
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const MS_PER_WEEK = 1700, LANE = 22, TOP = 26, RANKW = 30, LABELW = 92;
+
+let metric = "pd", t = W, playing = false, sel = null, raf = 0, lastTs = 0;
+let ys = null, geo = null;
+
+const ease = f => f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+function val(m, i, tt) {
+  if (reduce) tt = Math.round(tt);
+  const a = Math.floor(tt), b = Math.min(W, a + 1), f = ease(tt - a);
+  return F[a][m][i] + (F[b][m][i] - F[a][m][i]) * f;
+}
+function standings(tt) {
+  const v = T.map((_, i) => val(metric, i, tt));
+  const pd = T.map((_, i) => val("pd", i, tt));
+  const order = T.map((_, i) => i).sort((a, b) => v[b] - v[a] || pd[b] - pd[a] || T[a].abbr.localeCompare(T[b].abbr));
+  return { v, order };
+}
+function domain() {
+  let lo = 0, hi = 0;
+  for (const fr of F) for (const x of fr[metric]) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
+  const pad = (hi - lo) * 0.04 || 1;
+  return [lo < 0 ? lo - pad : 0, hi + pad];
+}
+function niceTicks(lo, hi, n) {
+  const raw = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 5, 10].map(k => k * p).find(s => s >= raw);
+  const out = [];
+  for (let x = Math.ceil(lo / step) * step; x <= hi + 1e-9; x += step) out.push(+x.toFixed(6));
+  return out;
+}
+
+// ---- build SVG once ----
+const svg = $("track");
+const gStripes = document.createElementNS(NS, "g");
+const gAxis = document.createElementNS(NS, "g");
+const gLanes = document.createElementNS(NS, "g");
+svg.append(gStripes, gAxis, gLanes);
+const H = TOP + N * LANE + 4;
+for (let k = 0; k < N; k++) {
+  const r = document.createElementNS(NS, "rect");
+  r.setAttribute("y", TOP + k * LANE); r.setAttribute("height", LANE); r.setAttribute("x", 0);
+  r.setAttribute("fill", k % 2 ? "transparent" : "var(--lane)"); r.setAttribute("rx", 4);
+  gStripes.append(r);
+  const n = document.createElementNS(NS, "text");
+  n.setAttribute("x", RANKW - 8); n.setAttribute("y", TOP + k * LANE + LANE / 2 + 4.5);
+  n.setAttribute("text-anchor", "end"); n.setAttribute("font-size", 13);
+  n.setAttribute("fill", k < 3 ? "var(--ink)" : "var(--muted)"); n.setAttribute("font-weight", k < 3 ? 600 : 500);
+  gStripes.append(n);
+}
+const rankEls = [...gStripes.querySelectorAll("text")];
+const lanes = T.map((tm, i) => {
+  const g = document.createElementNS(NS, "g");
+  g.style.cursor = "pointer";
+  const hit = document.createElementNS(NS, "rect");
+  hit.setAttribute("height", LANE); hit.setAttribute("y", -LANE / 2); hit.setAttribute("x", 0); hit.setAttribute("fill", "transparent");
+  const trail = document.createElementNS(NS, "line");
+  trail.setAttribute("stroke-width", 2); trail.setAttribute("stroke-linecap", "round");
+  const horse = document.createElementNS(NS, "circle");
+  horse.setAttribute("r", 6); horse.setAttribute("stroke", "var(--surface)"); horse.setAttribute("stroke-width", 2);
+  const lbl = document.createElementNS(NS, "text");
+  lbl.setAttribute("font-size", 13); lbl.setAttribute("y", 4.5);
+  const ab = document.createElementNS(NS, "tspan"); ab.textContent = tm.abbr; ab.setAttribute("font-weight", 600);
+  const vv = document.createElementNS(NS, "tspan"); vv.setAttribute("fill", "var(--muted)"); vv.setAttribute("dx", 5);
+  lbl.append(ab, vv);
+  g.append(hit, trail, horse, lbl);
+  g.addEventListener("pointermove", e => showTip(i, e));
+  g.addEventListener("pointerleave", hideTip);
+  g.addEventListener("click", e => { setSel(sel === i ? null : i); showTip(i, e); });
+  gLanes.append(g);
+  return { g, hit, trail, horse, lbl, ab, vv };
+});
+
+function layout() {
+  const w = svg.clientWidth || 600;
+  const [lo, hi] = domain();
+  const left = RANKW + (lo < 0 ? LABELW - 10 : 10), right = w - LABELW;
+  const x = v => left + (v - lo) / (hi - lo) * (right - left);
+  geo = { w, x, lo, hi };
+  svg.setAttribute("viewBox", `0 0 ${w} ${H}`); svg.setAttribute("height", H);
+  gStripes.querySelectorAll("rect").forEach(r => r.setAttribute("width", w));
+  lanes.forEach(l => l.hit.setAttribute("width", w));
+  gAxis.replaceChildren();
+  for (const tk of niceTicks(lo, hi, w < 520 ? 4 : 7)) {
+    const X = x(tk), zero = tk === 0;
+    const ln = document.createElementNS(NS, "line");
+    ln.setAttribute("x1", X); ln.setAttribute("x2", X); ln.setAttribute("y1", TOP - 4); ln.setAttribute("y2", H - 4);
+    ln.setAttribute("stroke", zero ? "var(--ink-2)" : "var(--rule)"); ln.setAttribute("stroke-width", zero ? 1.5 : 1);
+    if (zero) ln.setAttribute("stroke-dasharray", "3 3");
+    const tx = document.createElementNS(NS, "text");
+    tx.setAttribute("x", X); tx.setAttribute("y", TOP - 9); tx.setAttribute("text-anchor", "middle");
+    tx.setAttribute("font-size", 12); tx.setAttribute("fill", zero ? "var(--ink-2)" : "var(--muted)");
+    tx.textContent = zero ? "START" : M[metric].fmt(tk);
+    gAxis.append(ln, tx);
+  }
+}
+
+function render(dt) {
+  const { v, order } = standings(t);
+  if (!ys) ys = order.reduce((a, i, k) => (a[i] = k, a), []);
+  const k = Math.min(1, reduce ? 1 : dt / 110);
+  let moving = false;
+  const round = M[metric].round;
+  order.forEach((i, rank) => {
+    ys[i] += (rank - ys[i]) * k;
+    if (Math.abs(rank - ys[i]) > 0.01) moving = true; else ys[i] = rank;
+  });
+  // shared ranks for ties at displayed precision
+  order.forEach((i, pos) => {
+    const better = order.filter(j => round(v[j]) > round(v[i])).length;
+    const tied = order.some(j => j !== i && round(v[j]) === round(v[i]));
+    rankEls[pos].textContent = (tied ? "T" : "") + (better + 1);
+  });
+  const x0 = geo.x(0);
+  T.forEach((tm, i) => {
+    const L = lanes[i], X = geo.x(v[i]), Y = TOP + ys[i] * LANE + LANE / 2;
+    const isSel = sel === i, lead = order[0] === i, dim = sel !== null && !isSel;
+    L.g.setAttribute("transform", `translate(0 ${Y})`);
+    L.trail.setAttribute("x1", x0); L.trail.setAttribute("x2", X);
+    L.trail.setAttribute("stroke", isSel ? "var(--accent)" : "var(--muted)");
+    L.trail.setAttribute("stroke-opacity", isSel ? 1 : dim ? 0.25 : 0.55);
+    L.horse.setAttribute("cx", X);
+    L.horse.setAttribute("fill", isSel ? "var(--accent)" : lead ? "var(--gold)" : "var(--ink-2)");
+    L.horse.setAttribute("r", isSel || lead ? 7 : 6);
+    L.horse.setAttribute("opacity", dim ? 0.45 : 1);
+    const neg = v[i] < 0;
+    L.lbl.setAttribute("x", neg ? X - 11 : X + 11);
+    L.lbl.setAttribute("text-anchor", neg ? "end" : "start");
+    L.ab.setAttribute("fill", isSel ? "var(--accent)" : "var(--ink)");
+    L.lbl.setAttribute("opacity", dim ? 0.5 : 1);
+    L.vv.textContent = M[metric].fmt(v[i]);
+  });
+  if (sel !== null) gLanes.append(lanes[sel].g);
+  const ld = order[0];
+  $("lwho").textContent = t < 0.5 ? "At the gate" : T[ld].name;
+  $("lval").textContent = t < 0.5 ? "" : M[metric].fmt(v[ld]);
+  $("wk").textContent = Math.round(t) === 0 ? "Gate" : "Week " + Math.round(t);
+  $("scrub").value = t;
+  renderTable();
+  renderHighlights();
+  return moving;
+}
+
+let hlKey = "";
+function renderHighlights() {
+  const k = Math.max(1, Math.round(t)), key = k + "|" + sel;
+  if (key === hlKey) return; hlKey = key;
+  let list, head, sub;
+  if (sel !== null) {
+    const ab = T[sel].abbr;
+    list = D.highlights.filter(h => h.teams.includes(ab) && h.week <= k).sort((a, b) => b.week - a.week || b.score - a.score);
+    head = `${T[sel].name} highlights`;
+    sub = `Weeks 1 to ${k}, newest first. Includes plays against them.`;
+  } else {
+    list = D.highlights.filter(h => h.week === k).sort((a, b) => b.score - a.score).slice(0, 9);
+    head = `Week ${k} highlights`;
+    sub = "The biggest moments of the week, ranked by how much they swung the odds of winning. Follow a team to see its season.";
+  }
+  $("hlh").textContent = head; $("hlsub").textContent = sub;
+  const cards = list.map(h => {
+    const c = document.createElement("article"); c.className = "hl-card";
+    const meta = document.createElement("div"); meta.className = "hl-meta";
+    const kind = document.createElement("span");
+    kind.className = "hl-kind" + (h.kind.includes("TD") && h.kind !== "Long TD" ? " to" : "");
+    kind.textContent = h.kind;
+    const game = document.createElement("span"); game.className = "hl-game"; game.textContent = `Wk ${h.week} · ${h.game}`;
+    const when = document.createElement("span"); when.textContent = h.when;
+    meta.append(kind, game, when);
+    const p = document.createElement("p"); p.textContent = h.text;
+    c.append(meta, p);
+    return c;
+  });
+  if (!cards.length) { const e = document.createElement("p"); e.className = "hl-empty"; e.textContent = "No highlights yet."; cards.push(e); }
+  $("hllist").replaceChildren(...cards);
+}
+
+let tblKey = "";
+function renderTable() {
+  const k = Math.round(t), key = metric + k + sel;
+  if (key === tblKey) return; tblKey = key;
+  const fr = F[k], m = metric;
+  const order = T.map((_, i) => i).sort((a, b) => fr[m][b] - fr[m][a] || fr.pd[b] - fr.pd[a] || T[a].abbr.localeCompare(T[b].abbr));
+  $("tblh").textContent = k === 0 ? "Standings" : `Standings after Week ${k}, by ${M[m].label.toLowerCase()}`;
+  document.querySelectorAll("th[data-m]").forEach(th => th.classList.toggle("sorted", th.dataset.m === m));
+  $("tbody").replaceChildren(...order.map((i, pos) => {
+    const tr = document.createElement("tr"); if (i === sel) tr.className = "sel";
+    [pos + 1, T[i].name, fr.rec[i], M.pd.fmt(fr.pd[i]), M.srs.fmt(fr.srs[i])].forEach(c => {
+      const td = document.createElement("td"); td.textContent = c; tr.append(td);
+    });
+    return tr;
+  }));
+}
+
+function tick(ts) {
+  const dt = lastTs ? Math.min(64, ts - lastTs) : 16; lastTs = ts;
+  if (playing) {
+    t = Math.min(W, t + dt / MS_PER_WEEK);
+    if (t >= W) { playing = false; setPlayLabel(); }
+  }
+  const moving = render(dt);
+  if (playing || moving) raf = requestAnimationFrame(tick); else { raf = 0; lastTs = 0; }
+}
+const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
+const setPlayLabel = () => $("play").textContent = playing ? "Pause" : t >= W ? "Replay race" : "Play race";
+
+function setSel(i) {
+  sel = i; $("follow").value = i === null ? "" : T[i].abbr; tblKey = ""; hlKey = ""; kick();
+}
+function setMetric(m) {
+  metric = m;
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m));
+  $("mnote").textContent = M[m].note;
+  layout(); tblKey = ""; kick();
+}
+
+const tip = $("tip"), board = $("board");
+function showTip(i, e) {
+  const k = Math.round(t), fr = F[k];
+  tip.innerHTML = `<b>${T[i].name}</b><br>${fr.rec[i]} · ${T[i].div}<br>Pt diff ${M.pd.fmt(fr.pd[i])} · Strength ${M.srs.fmt(fr.srs[i])}<br>${fr.last[i]}`;
+  tip.hidden = false;
+  const b = board.getBoundingClientRect();
+  let x = e.clientX - b.left + 14, y = e.clientY - b.top + 14;
+  if (x + tip.offsetWidth > b.width - 8) x = e.clientX - b.left - tip.offsetWidth - 14;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.hidden = true; }
+
+// ---- wire up ----
+$("scrub").max = W;
+$("status").innerHTML = `${D.status}<br>Latest game ${D.updated}`;
+$("foot").innerHTML = `Data: <a href="https://github.com/nflverse" target="_blank" rel="noopener">nflverse</a> 2026 regular season. Week 0 is the starting gate; teams on a bye hold their position for that week. Hover or tap a lane for details.`;
+T.forEach((tm, i) => { const o = document.createElement("option"); o.value = tm.abbr; o.textContent = tm.name; $("follow").append(o); });
+$("follow").addEventListener("change", e => setSel(e.target.value ? T.findIndex(x => x.abbr === e.target.value) : null));
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => setMetric(b.dataset.m)));
+$("play").addEventListener("click", () => {
+  if (playing) playing = false;
+  else { if (t >= W) t = 0; playing = true; }
+  setPlayLabel(); kick();
+});
+$("scrub").addEventListener("input", e => { playing = false; t = +e.target.value; setPlayLabel(); kick(); });
+new ResizeObserver(() => { layout(); kick(); }).observe(svg);
+setMetric("pd"); setPlayLabel();
+</script>
+</body>
+</html>

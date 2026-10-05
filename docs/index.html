@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Week-by-week race of all 32 NFL teams in the 2026 season, with game highlights. Updates daily.">
+<title>NFL Derby 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: one race track (rank-sorted lanes, horses run along a fixed scale), controls above, standings table + definitions below */
+:root {
+  --bg: #f2f4ef; --surface: #fbfcf9; --lane: #e8ece4; --rule: #d2d9cf;
+  --ink: #1b231e; --ink-2: #48554d; --muted: #7d8a82;
+  --accent: #2647c9; --accent-soft: #dfe5fb; --gold: #a77a06;
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-label: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111613; --surface: #171e19; --lane: #1c241f; --rule: #2b352e;
+  --ink: #e5ebe6; --ink-2: #a7b3ab; --muted: #6e7b73;
+  --accent: #8ba3ff; --accent-soft: #232c4d; --gold: #e2b94a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111613; --surface: #171e19; --lane: #1c241f; --rule: #2b352e;
+  --ink: #e5ebe6; --ink-2: #a7b3ab; --muted: #6e7b73;
+  --accent: #8ba3ff; --accent-soft: #232c4d; --gold: #e2b94a; color-scheme: dark }
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; }
+h1 { font: 800 clamp(34px, 6vw, 52px)/0.95 var(--f-display); letter-spacing: 0.01em; margin: 0; text-transform: uppercase; text-wrap: balance; }
+.sub { color: var(--ink-2); margin: 6px 0 0; }
+.status { font: 500 13px var(--f-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); text-align: right; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { font: 600 14px var(--f-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); background: none; border: 0; padding: 8px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.play { font: 600 14px var(--f-label); letter-spacing: 0.06em; text-transform: uppercase; background: var(--accent); color: var(--surface); border: 0; border-radius: 8px; padding: 9px 16px; cursor: pointer; min-width: 112px; }
+.scrub { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0; }
+.scrub input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.wk { font: 800 22px var(--f-display); text-transform: uppercase; min-width: 7.5ch; font-variant-numeric: tabular-nums; }
+select { font: 500 14px var(--f-body); color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 7px 8px; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.board { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 12px 10px; position: relative; }
+.leader { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; padding: 0 4px 10px; border-bottom: 1px solid var(--rule); margin-bottom: 6px; }
+.leader .lbl { font: 500 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.leader .who { font: 800 24px var(--f-display); text-transform: uppercase; }
+.leader .val { font: 600 16px var(--f-label); color: var(--gold); font-variant-numeric: tabular-nums; }
+.metric-note { color: var(--ink-2); font-size: 13px; margin-left: auto; }
+svg { display: block; width: 100%; }
+svg text { font-family: var(--f-label); font-variant-numeric: tabular-nums; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.4; max-width: 240px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
+.tip b { font: 700 15px var(--f-label); letter-spacing: 0.02em; }
+
+h2 { font: 800 24px var(--f-display); text-transform: uppercase; margin: 8px 0 0; }
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.def { min-width: 0; }
+.def h3 { font: 600 15px var(--f-label); letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 4px; }
+.def p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 65ch; }
+.def code { font: 500 13px ui-monospace, Consolas, monospace; background: var(--lane); padding: 1px 4px; border-radius: 4px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+th { font: 600 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule); }
+td { padding: 5px 10px; text-align: right; border-bottom: 1px solid var(--lane); }
+th:nth-child(2), td:nth-child(2) { text-align: left; }
+tr.sel td { background: var(--accent-soft); }
+.sorted { color: var(--ink); }
+.hl-sub { color: var(--ink-2); margin: 2px 0 12px; font-size: 14px; }
+.hl-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.hl-card { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+.hl-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font: 500 13px var(--f-label); letter-spacing: 0.04em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hl-kind { font: 600 12px var(--f-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: var(--lane); border-radius: 4px; padding: 2px 6px; }
+.hl-kind.to { color: var(--accent); background: var(--accent-soft); }
+.hl-game { color: var(--ink-2); font-weight: 600; }
+.hl-card p { margin: 0; font-size: 14px; }
+.hl-empty { color: var(--muted); font-size: 14px; }
+footer { color: var(--muted); font-size: 13px; }
+footer a { color: var(--ink-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>NFL Derby 2026</h1>
+      <p class="sub">Every team racing week by week. Pick what "best" means and watch the lead change.</p>
+    </div>
+    <div class="status" id="status"></div>
+  </header>
+
+  <div class="controls">
+    <button class="play" id="play" type="button">Play race</button>
+    <div class="scrub">
+      <span class="wk" id="wk">Week 0</span>
+      <input id="scrub" type="range" min="0" step="0.01" aria-label="Week">
+    </div>
+    <div class="seg" role="group" aria-label="Best team by">
+      <button type="button" data-m="pd">Point diff</button>
+      <button type="button" data-m="wins">Wins</button>
+      <button type="button" data-m="srs">Strength-adj.</button>
+    </div>
+    <select id="follow" aria-label="Follow a team"><option value="">Follow a team…</option></select>
+  </div>
+
+  <div class="board" id="board">
+    <div class="leader">
+      <span class="lbl">In the lead</span><span class="who" id="lwho"></span><span class="val" id="lval"></span>
+      <span class="metric-note" id="mnote"></span>
+    </div>
+    <svg id="track" role="img" aria-label="Race track of all 32 teams"></svg>
+    <div class="tip" id="tip" hidden></div>
+  </div>
+
+  <section class="hl">
+    <h2 id="hlh">Highlights</h2>
+    <p class="hl-sub" id="hlsub"></p>
+    <div class="hl-list" id="hllist"></div>
+  </section>
+
+  <section>
+    <h2>Three ways to define "best"</h2>
+    <div class="defs">
+      <div class="def"><h3>Wins</h3><p>What the official standings use. Simple, but a 1-point win counts the same as a 30-point blowout, and four weeks in, half the league is tied with someone.</p></div>
+      <div class="def"><h3>Point differential</h3><p>Points scored minus points allowed, added up game by game. Close games are close to coin flips, so margin tends to predict future wins better than record does.</p></div>
+      <div class="def"><h3>Strength-adjusted</h3><p>Each game becomes one equation: <code>home rating − away rating = margin</code>. With more games than teams there's no exact solution, so the ratings are the least-squares best fit (sum of ratings fixed at 0). Beating a strong team by 10 counts for more than beating a weak one by 10. Expect it to jump around this early in the season.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="tblh">Standings</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>#</th><th>Team</th><th>Record</th><th data-m="pd">Pt diff</th><th data-m="srs">Strength</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const D = {"updated":"2026-10-04","status":"Week 4: 15 of 16 games final","teams":[{"abbr":"ARI","name":"Arizona Cardinals","div":"NFC West"},{"abbr":"ATL","name":"Atlanta Falcons","div":"NFC South"},{"abbr":"BAL","name":"Baltimore Ravens","div":"AFC North"},{"abbr":"BUF","name":"Buffalo Bills","div":"AFC East"},{"abbr":"CAR","name":"Carolina Panthers","div":"NFC South"},{"abbr":"CHI","name":"Chicago Bears","div":"NFC North"},{"abbr":"CIN","name":"Cincinnati Bengals","div":"AFC North"},{"abbr":"CLE","name":"Cleveland Browns","div":"AFC North"},{"abbr":"DAL","name":"Dallas Cowboys","div":"NFC East"},{"abbr":"DEN","name":"Denver Broncos","div":"AFC West"},{"abbr":"DET","name":"Detroit Lions","div":"NFC North"},{"abbr":"GB","name":"Green Bay Packers","div":"NFC North"},{"abbr":"HOU","name":"Houston Texans","div":"AFC South"},{"abbr":"IND","name":"Indianapolis Colts","div":"AFC South"},{"abbr":"JAX","name":"Jacksonville Jaguars","div":"AFC South"},{"abbr":"KC","name":"Kansas City Chiefs","div":"AFC West"},{"abbr":"LA","name":"Los Angeles Rams","div":"NFC West"},{"abbr":"LAC","name":"Los Angeles Chargers","div":"AFC West"},{"abbr":"LV","name":"Las Vegas Raiders","div":"AFC West"},{"abbr":"MIA","name":"Miami Dolphins","div":"AFC East"},{"abbr":"MIN","name":"Minnesota Vikings","div":"NFC North"},{"abbr":"NE","name":"New England Patriots","div":"AFC East"},{"abbr":"NO","name":"New Orleans Saints","div":"NFC South"},{"abbr":"NYG","name":"New York Giants","div":"NFC East"},{"abbr":"NYJ","name":"New York Jets","div":"AFC East"},{"abbr":"PHI","name":"Philadelphia Eagles","div":"NFC East"},{"abbr":"PIT","name":"Pittsburgh Steelers","div":"AFC North"},{"abbr":"SEA","name":"Seattle Seahawks","div":"NFC West"},{"abbr":"SF","name":"San Francisco 49ers","div":"NFC West"},{"abbr":"TB","name":"Tampa Bay Buccaneers","div":"NFC South"},{"abbr":"TEN","name":"Tennessee Titans","div":"AFC South"},{"abbr":"WAS","name":"Washington Commanders","div":"NFC East"}],"frames":[{"wins":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"pd":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"srs":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rec":["0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0","0-0"],"last":["Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate","Starting gate"]},{"wins":[1.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,1.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0],"pd":[12,-7,18,5,-22,22,6,-24,-8,-21,1,-17,-5,-18,24,21,-20,-12,14,-14,17,-3,-1,8,13,2,7,3,20,-6,-13,-2],"srs":[6.0,-3.5,9.0,2.5,-11.0,11.0,3.0,-12.0,-4.0,-10.5,0.5,-8.5,-2.5,-9.0,12.0,10.5,-10.0,-6.0,7.0,-7.0,8.5,-1.5,-0.5,4.0,6.5,1.0,3.5,1.5,10.0,-3.0,-6.5,-1.0],"rec":["1-0","0-1","1-0","1-0","0-1","1-0","1-0","0-1","0-1","0-1","1-0","0-1","0-1","0-1","1-0","1-0","0-1","0-1","1-0","0-1","1-0","0-1","0-1","1-0","1-0","1-0","1-0","1-0","1-0","0-1","0-1","0-1"],"last":["Wk 1: W 26-14 @ LAC","Wk 1: L 13-20 @ PIT","Wk 1: W 41-23 @ IND","Wk 1: W 36-31 @ HOU","Wk 1: L 37-59 vs CHI","Wk 1: W 59-37 @ CAR","Wk 1: W 33-27 vs TB","Wk 1: L 10-34 @ JAX","Wk 1: L 20-28 @ NYG","Wk 1: L 10-31 @ KC","Wk 1: W 31-30 vs NO","Wk 1: L 22-39 @ MIN","Wk 1: L 31-36 vs BUF","Wk 1: L 23-41 vs BAL","Wk 1: W 34-10 vs CLE","Wk 1: W 31-10 vs DEN","Wk 1: L 7-27 vs SF","Wk 1: L 14-26 vs ARI","Wk 1: W 27-13 vs MIA","Wk 1: L 13-27 @ LV","Wk 1: W 39-22 vs GB","Wk 1: L 10-13 @ SEA","Wk 1: L 30-31 @ DET","Wk 1: W 28-20 vs DAL","Wk 1: W 23-10 @ TEN","Wk 1: W 24-22 vs WAS","Wk 1: W 20-13 vs ATL","Wk 1: W 13-10 vs NE","Wk 1: W 27-7 @ LA","Wk 1: L 27-33 @ CIN","Wk 1: L 10-23 vs NYJ","Wk 1: L 22-24 @ PHI"]},{"wins":[1.0,0.0,1.0,2.0,1.0,1.0,2.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,1.0,2.0,1.0,0.0,2.0,0.0,2.0,1.0,1.0,1.0,1.0,2.0,1.0,2.0,2.0,0.0,0.0,0.0],"pd":[-12,-38,11,15,9,16,20,-20,9,-14,-9,-14,-19,-21,17,24,2,-24,26,-36,23,14,6,-14,10,6,-10,27,42,-10,-17,-19],"srs":[-0.7,-20.5,10.92,5.92,6.3,24.1,-0.42,-17.75,-13.3,-2.08,3.58,4.7,-6.75,0.58,-1.42,11.25,8.3,-8.5,7.7,-2.1,25.9,11.9,10.25,-9.5,-2.5,-19.9,-9.3,19.1,24.1,-14.08,-19.7,-26.1],"rec":["1-1","0-2","1-1","2-0","1-1","1-1","2-0","1-1","1-1","1-1","1-1","1-1","0-2","0-2","1-1","2-0","1-1","0-2","2-0","0-2","2-0","1-1","1-1","1-1","1-1","2-0","1-1","2-0","2-0","0-2","0-2","0-2"],"last":["Wk 2: L 7-31 vs SEA","Wk 2: L 3-34 vs CAR","Wk 2: L 17-24 vs NO","Wk 2: W 41-31 vs DET","Wk 2: W 34-3 @ ATL","Wk 2: L 3-9 vs MIN","Wk 2: W 20-6 @ HOU","Wk 2: W 23-19 @ TB","Wk 2: W 37-20 vs WAS","Wk 2: W 20-13 vs JAX","Wk 2: L 31-41 @ BUF","Wk 2: W 20-17 @ NYJ","Wk 2: L 6-20 vs CIN","Wk 2: L 30-33 @ KC","Wk 2: L 13-20 @ DEN","Wk 2: W 33-30 vs IND","Wk 2: W 28-6 vs NYG","Wk 2: L 14-26 vs LV","Wk 2: W 26-14 @ LAC","Wk 2: L 13-35 @ SF","Wk 2: W 9-3 @ CHI","Wk 2: W 20-3 vs PIT","Wk 2: W 24-17 @ BAL","Wk 2: L 6-28 @ LA","Wk 2: L 17-20 vs GB","Wk 2: W 24-20 @ TEN","Wk 2: L 3-20 @ NE","Wk 2: W 31-7 @ ARI","Wk 2: W 35-13 vs MIA","Wk 2: L 19-23 vs CLE","Wk 2: L 20-24 vs PHI","Wk 2: L 20-37 @ DAL"]},{"wins":[1.0,1.0,2.0,3.0,1.0,2.0,2.0,2.0,1.0,2.0,2.0,1.0,0.0,1.0,2.0,3.0,1.0,0.0,3.0,0.0,3.0,1.0,1.0,2.0,1.0,2.0,2.0,2.0,3.0,0.0,0.0,1.0],"pd":[-18,-17,14,23,6,36,17,-17,6,-10,-2,-35,-21,-19,46,38,-2,-32,34,-50,30,-15,-2,-9,3,-14,-7,25,48,-17,-22,-17],"srs":[-1.03,-12.52,4.27,1.77,2.22,12.66,0.36,0.53,-0.99,9.47,-2.83,-16.91,-7.22,-2.79,19.18,13.58,5.66,-7.64,8.33,-3.96,7.64,1.55,2.59,-6.72,-10.85,-7.89,-5.87,6.34,16.23,-2.82,-15.82,-6.51],"rec":["1-2","1-2","2-1","3-0","1-2","2-1","2-1","2-1","1-2","2-1","2-1","1-2","0-3","1-2","2-1","3-0","1-2","0-3","3-0","0-3","3-0","1-2","1-2","2-1","1-2","2-1","2-1","2-1","3-0","0-3","0-3","1-2"],"last":["Wk 3: L 30-36 @ SF","Wk 3: W 35-14 @ GB","Wk 3: W 34-31 @ DAL","Wk 3: W 24-16 vs LAC","Wk 3: L 18-21 @ CLE","Wk 3: W 27-7 vs PHI","Wk 3: L 27-30 @ PIT","Wk 3: W 21-18 vs CAR","Wk 3: L 31-34 vs BAL","Wk 3: W 30-26 vs LA","Wk 3: W 31-24 vs NYJ","Wk 3: L 14-35 vs ATL","Wk 3: L 17-19 @ IND","Wk 3: W 19-17 vs HOU","Wk 3: W 35-6 vs NE","Wk 3: W 24-10 @ MIA","Wk 3: L 26-30 @ DEN","Wk 3: L 16-24 @ BUF","Wk 3: W 35-27 @ NO","Wk 3: L 10-24 vs KC","Wk 3: W 23-16 @ TB","Wk 3: L 6-35 @ JAX","Wk 3: L 27-35 vs LV","Wk 3: W 12-7 vs TEN","Wk 3: L 24-31 @ DET","Wk 3: L 7-27 @ CHI","Wk 3: W 30-27 vs CIN","Wk 3: L 31-33 @ WAS","Wk 3: W 36-30 vs ARI","Wk 3: L 16-23 vs MIN","Wk 3: L 7-12 @ NYG","Wk 3: W 33-31 vs SEA"]},{"wins":[1.0,1.0,3.0,3.0,2.0,3.0,2.0,3.0,2.0,2.0,2.0,2.0,0.0,2.0,3.0,4.0,2.0,0.0,3.0,0.0,4.0,2.0,1.0,3.0,1.0,2.0,2.0,3.0,4.0,0.0,0.0,1.0],"pd":[-30,-17,20,20,12,47,12,-14,10,-20,-8,-32,-25,-2,51,41,2,-39,31,-55,35,-12,-2,3,-8,-18,-10,32,58,-20,-28,-34],"srs":[-5.85,-10.59,2.94,1.14,2.19,11.26,2.33,-2.18,-1.23,6.73,-1.71,-11.9,-5.76,-0.28,14.51,13.43,3.96,-8.13,9.07,-2.8,6.3,0.18,2.76,-2.4,-4.96,-5.5,-5.07,2.12,15.01,-6.36,-9.48,-9.72],"rec":["1-3","1-2","3-1","3-1","2-2","3-1","2-2","3-1","2-2","2-2","2-2","2-2","0-4","2-2","3-1","4-0","2-2","0-4","3-1","0-4","4-0","2-2","1-2","3-1","1-3","2-2","2-2","3-1","4-0","0-4","0-4","1-3"],"last":["Wk 4: L 24-36 @ NYG","Wk 3: W 35-14 @ GB","Wk 4: W 24-18 vs TEN","Wk 4: L 26-29 vs NE","Wk 4: W 32-26 vs DET","Wk 4: W 23-12 vs NYJ","Wk 4: L 17-22 vs JAX","Wk 4: W 27-24 vs PIT","Wk 4: W 34-30 @ HOU","Wk 4: L 14-24 @ SF","Wk 4: L 26-32 @ CAR","Wk 4: W 17-14 @ TB","Wk 4: L 30-34 vs DAL","Wk 4: W 30-13 @ WAS","Wk 4: W 22-17 @ CIN","Wk 4: W 30-27 @ LV","Wk 4: W 24-20 @ PHI","Wk 4: L 23-30 @ SEA","Wk 4: L 27-30 vs KC","Wk 4: L 10-15 @ MIN","Wk 4: W 15-10 vs MIA","Wk 4: W 29-26 @ BUF","Wk 3: L 27-35 vs LV","Wk 4: W 36-24 vs ARI","Wk 4: L 12-23 @ CHI","Wk 4: L 20-24 vs LA","Wk 4: L 24-27 @ CLE","Wk 4: W 30-23 vs LAC","Wk 4: W 24-14 vs DEN","Wk 4: L 14-17 vs GB","Wk 4: L 18-24 @ BAL","Wk 4: L 13-30 vs IND"]}],"highlights":[{"week":1,"game":"ARI 26 @ LAC 14","teams":["LAC","ARI"],"kind":"Biggest swing","when":"Q2 13:37","text":"With the game tied, Omarion Hampton lost a fumble, recovered by Will Johnson.","score":0.127},{"week":1,"game":"ATL 13 @ PIT 20","teams":["ATL","PIT"],"kind":"Defensive TD","when":"Q4 14:16","text":"T.J. Watt intercepted Cooper Rush and took it back for a Steelers touchdown.","score":0.436},{"week":1,"game":"ATL 13 @ PIT 20","teams":["PIT","ATL"],"kind":"Turnover \u2192 TD","when":"Q1 02:48","text":"Steelers turnover: Divine Deablo recovered a fumble by Jaylen Warren, and 3 plays later Cooper Rush hit Bijan Robinson for 23 yards and a touchdown. They started 25 yards from the end zone.","score":0.424},{"week":1,"game":"BAL 41 @ IND 23","teams":["IND","BAL"],"kind":"Turnover \u2192 TD","when":"Q1 07:38","text":"Colts turnover: Roquan Smith intercepted Daniel Jones, and 6 plays later Derrick Henry ran for 4 yards and a touchdown. They started 31 yards from the end zone.","score":0.357},{"week":1,"game":"BAL 41 @ IND 23","teams":["BAL","IND"],"kind":"Turnover \u2192 TD","when":"Q2 04:34","text":"Ravens turnover: DeForest Buckner recovered a fumble by Lamar Jackson, and 4 plays later Jonathan Taylor ran for 3 yards and a touchdown. They started 15 yards from the end zone.","score":0.239},{"week":1,"game":"BUF 36 @ HOU 31","teams":["BUF","HOU"],"kind":"Biggest swing","when":"Q4 01:41","text":"With the Bills down 1, Josh Allen hit Josh Palmer for 34 yards and a touchdown.","score":0.324},{"week":1,"game":"BUF 36 @ HOU 31","teams":["BUF","HOU"],"kind":"Long TD","when":"Q2 01:39","text":"Bills: Josh Allen hit DJ Moore for 43 yards and a touchdown.","score":0.172},{"week":1,"game":"CHI 59 @ CAR 37","teams":["CHI","CAR"],"kind":"Turnover \u2192 TD","when":"Q1 14:06","text":"Bears turnover: Will Lee III recovered a fumble by Luther Burden III, and 6 plays later Bryce Young hit Chuba Hubbard for 4 yards and a touchdown.","score":0.277},{"week":1,"game":"CHI 59 @ CAR 37","teams":["CHI","CAR"],"kind":"Long TD","when":"Q3 00:50","text":"Bears: Kyle Monangai ran for 61 yards and a touchdown.","score":0.244},{"week":1,"game":"CLE 10 @ JAX 34","teams":["CLE","JAX"],"kind":"Turnover \u2192 TD","when":"Q1 12:17","text":"Browns turnover: Foyesade Oluokun intercepted Deshaun Watson, and 8 plays later Trevor Lawrence hit Parker Washington for 30 yards and a touchdown.","score":0.415},{"week":1,"game":"CLE 10 @ JAX 34","teams":["CLE","JAX"],"kind":"Turnover \u2192 TD","when":"Q2 08:38","text":"Browns turnover: Josh Hines-Allen recovered a fumble by KC Concepcion, and 5 plays later Trevor Lawrence hit Brenton Strange for 14 yards and a touchdown.","score":0.202},{"week":1,"game":"DAL 20 @ NYG 28","teams":["DAL","NYG"],"kind":"Turnover \u2192 TD","when":"Q2 00:58","text":"Cowboys turnover: Jevon Holland intercepted Dak Prescott, and 6 plays later Jaxson Dart hit Isaiah Likely for 15 yards and a touchdown.","score":0.302},{"week":1,"game":"DAL 20 @ NYG 28","teams":["NYG","DAL"],"kind":"Biggest swing","when":"Q2 02:00","text":"With the game tied, Tyrone Tracy Jr. lost a fumble, recovered by Shavon Revel Jr.","score":0.107},{"week":1,"game":"DEN 10 @ KC 31","teams":["DEN","KC"],"kind":"Turnover \u2192 TD","when":"Q1 13:39","text":"Broncos turnover: Mansoor Delane intercepted Bo Nix, and 10 plays later Patrick Mahomes ran for 15 yards and a touchdown.","score":0.248},{"week":1,"game":"DEN 10 @ KC 31","teams":["KC","DEN"],"kind":"Long TD","when":"Q3 12:53","text":"Chiefs: Kenneth Walker III ran for 60 yards and a touchdown.","score":0.24},{"week":1,"game":"GB 22 @ MIN 39","teams":["GB","MIN"],"kind":"Turnover \u2192 TD","when":"Q4 05:01","text":"Packers turnover: Andrew Van Ginkel recovered a fumble by Jordan Love, and on the next play Jordan Mason ran for 1 yards and a touchdown. They started 1 yards from the end zone.","score":0.339},{"week":1,"game":"GB 22 @ MIN 39","teams":["GB","MIN"],"kind":"Long TD","when":"Q1 07:54","text":"Packers: Jordan Love hit Christian Watson for 81 yards and a touchdown.","score":0.324},{"week":1,"game":"MIA 13 @ LV 27","teams":["LV","MIA"],"kind":"Turnover \u2192 TD","when":"Q3 14:34","text":"Raiders turnover: Michael Taaffe intercepted Kirk Cousins, and 4 plays later Malik Willis ran for 14 yards and a touchdown.","score":0.293},{"week":1,"game":"NE 10 @ SEA 13","teams":["NE","SEA"],"kind":"Turnover \u2192 TD","when":"Q4 14:27","text":"Patriots turnover: Nehemiah Pritchett intercepted Drake Maye, and 5 plays later Drew Lock hit Jaxon Smith-Njigba for 45 yards and a touchdown.","score":0.539},{"week":1,"game":"NE 10 @ SEA 13","teams":["NE","SEA"],"kind":"Biggest swing","when":"Q4 00:26","text":"With the Patriots down 3, Josh Jobe intercepted Drake Maye.","score":0.421},{"week":1,"game":"NO 30 @ DET 31","teams":["NO","DET"],"kind":"Biggest swing","when":"OT 01:38","text":"With the Saints down 7, Tyler Shough hit Noah Fant for 8 yards and a touchdown.","score":0.573},{"week":1,"game":"NO 30 @ DET 31","teams":["NO","DET"],"kind":"Turnover \u2192 TD","when":"Q3 15:00","text":"Saints turnover: Derrick Barnes intercepted Tyler Shough, and 7 plays later Jahmyr Gibbs ran for 1 yards and a touchdown.","score":0.262},{"week":1,"game":"NYJ 23 @ TEN 10","teams":["NYJ","TEN"],"kind":"Biggest swing","when":"Q2 02:44","text":"With the Jets up 7, Jason Sanders's 54-yard field goal was no good.","score":0.128},{"week":1,"game":"SF 27 @ LA 7","teams":["LA","SF"],"kind":"Turnover \u2192 TD","when":"Q2 08:58","text":"Rams turnover: Renardo Green intercepted Matthew Stafford, and 9 plays later Brock Purdy hit Demarcus Robinson for 39 yards and a touchdown.","score":0.322},{"week":1,"game":"TB 27 @ CIN 33","teams":["TB","CIN"],"kind":"Defensive TD","when":"Q1 06:29","text":"Demetrius Knight Jr. recovered a fumble by Baker Mayfield and took it back for a Bengals touchdown.","score":0.399},{"week":1,"game":"TB 27 @ CIN 33","teams":["CIN","TB"],"kind":"Defensive TD","when":"Q3 02:24","text":"Josiah Trotter intercepted Joe Burrow and took it back for a Buccaneers touchdown.","score":0.334},{"week":1,"game":"WAS 22 @ PHI 24","teams":["PHI","WAS"],"kind":"Long TD","when":"Q4 06:12","text":"Eagles: Jalen Hurts hit Dallas Goedert for 43 yards and a touchdown.","score":0.172},{"week":1,"game":"WAS 22 @ PHI 24","teams":["PHI","WAS"],"kind":"Biggest swing","when":"Q4 08:03","text":"With the Eagles up 1, Jalen Hurts ran for 22 yards.","score":0.156},{"week":2,"game":"CAR 34 @ ATL 3","teams":["ATL","CAR"],"kind":"Turnover \u2192 TD","when":"Q1 15:00","text":"Falcons turnover: Nick Scott recovered a fumble by Cooper Rush, and 8 plays later Bryce Young hit Chuba Hubbard for 3 yards and a touchdown. They started 35 yards from the end zone.","score":0.374},{"week":2,"game":"CAR 34 @ ATL 3","teams":["ATL","CAR"],"kind":"Defensive TD","when":"Q3 03:08","text":"Devin Lloyd intercepted Jack Strand and took it back for a Panthers touchdown.","score":0.203},{"week":2,"game":"CIN 20 @ HOU 6","teams":["CIN","HOU"],"kind":"Biggest swing","when":"Q2 04:21","text":"With the game tied, Joe Burrow hit Tee Higgins for 23 yards.","score":0.103},{"week":2,"game":"CLE 23 @ TB 19","teams":["TB","CLE"],"kind":"Biggest swing","when":"Q4 00:22","text":"With the Buccaneers down 4, Baker Mayfield's pass fell incomplete on 4th down.","score":0.263},{"week":2,"game":"CLE 23 @ TB 19","teams":["CLE","TB"],"kind":"Long TD","when":"Q3 01:33","text":"Browns: Deshaun Watson hit Denzel Boston for 55 yards and a touchdown.","score":0.22},{"week":2,"game":"DET 31 @ BUF 41","teams":["BUF","DET"],"kind":"Long TD","when":"Q1 03:49","text":"Bills: Josh Allen hit Josh Palmer for 43 yards and a touchdown.","score":0.172},{"week":2,"game":"GB 20 @ NYJ 17","teams":["GB","NYJ"],"kind":"Biggest swing","when":"OT 06:17","text":"With the game tied, Jordan Love hit Chris Brooks for 15 yards.","score":0.302},{"week":2,"game":"IND 30 @ KC 33","teams":["KC","IND"],"kind":"Biggest swing","when":"OT 05:13","text":"With the game tied, Harrison Butker's 31-yard field goal was good.","score":0.532},{"week":2,"game":"IND 30 @ KC 33","teams":["IND","KC"],"kind":"Turnover \u2192 TD","when":"Q1 05:25","text":"Colts turnover: Kristian Fulton intercepted Daniel Jones, and 2 plays later Patrick Mahomes hit Travis Kelce for 13 yards and a touchdown. They started 16 yards from the end zone.","score":0.363},{"week":2,"game":"JAX 13 @ DEN 20","teams":["JAX","DEN"],"kind":"Turnover \u2192 TD","when":"Q3 01:40","text":"Jaguars turnover: Riley Moss intercepted Trevor Lawrence, and 10 plays later Bo Nix hit Nate Adkins for 7 yards and a touchdown.","score":0.388},{"week":2,"game":"LV 26 @ LAC 14","teams":["LAC","LV"],"kind":"Turnover \u2192 TD","when":"Q4 03:52","text":"Chargers turnover: Jeremy Chinn recovered a fumble by Omarion Hampton, and 3 plays later Kirk Cousins hit Cody White for 11 yards and a touchdown. They started 16 yards from the end zone.","score":0.607},{"week":2,"game":"LV 26 @ LAC 14","teams":["LV","LAC"],"kind":"Long TD","when":"Q2 11:57","text":"Raiders: Kirk Cousins hit Tre Tucker for 40 yards and a touchdown.","score":0.16},{"week":2,"game":"MIA 13 @ SF 35","teams":["MIA","SF"],"kind":"Long TD","when":"Q4 02:41","text":"Dolphins: Malik Willis hit Ryan Miller for 77 yards and a touchdown.","score":0.308},{"week":2,"game":"MIA 13 @ SF 35","teams":["MIA","SF"],"kind":"Biggest swing","when":"Q1 10:32","text":"With the game tied, Riley Patterson's 51-yard field goal was no good.","score":0.078},{"week":2,"game":"MIN 9 @ CHI 3","teams":["CHI","MIN"],"kind":"Biggest swing","when":"Q4 06:26","text":"With the Bears down 3, Cairo Santos's 23-yard field goal was no good.","score":0.249},{"week":2,"game":"NO 24 @ BAL 17","teams":["NO","BAL"],"kind":"Biggest swing","when":"Q4 02:03","text":"With the game tied, Tyler Shough hit Juwan Johnson for 25 yards.","score":0.182},{"week":2,"game":"NYG 6 @ LA 28","teams":["LA","NYG"],"kind":"Biggest swing","when":"Q2 12:50","text":"With the Rams up 7, Matthew Stafford hit Davante Adams for 64 yards.","score":0.093},{"week":2,"game":"PHI 24 @ TEN 20","teams":["PHI","TEN"],"kind":"Turnover \u2192 TD","when":"Q1 06:11","text":"Eagles turnover: Amani Hooker intercepted Jalen Hurts, and 4 plays later Cam Ward ran for 1 yards and a touchdown. They started 10 yards from the end zone.","score":0.49},{"week":2,"game":"PHI 24 @ TEN 20","teams":["PHI","TEN"],"kind":"Biggest swing","when":"Q4 00:14","text":"With the Eagles down 3, Jalen Hurts hit Darius Cooper for 3 yards and a touchdown.","score":0.372},{"week":2,"game":"PIT 3 @ NE 20","teams":["PIT","NE"],"kind":"Defensive TD","when":"Q4 13:46","text":"Elijah Ponder recovered a fumble by Aaron Rodgers and took it back for a Patriots touchdown.","score":0.304},{"week":2,"game":"PIT 3 @ NE 20","teams":["NE","PIT"],"kind":"Biggest swing","when":"Q1 11:32","text":"With the game tied, Rhamondre Stevenson lost a fumble, recovered by Payton Wilson.","score":0.116},{"week":2,"game":"SEA 31 @ ARI 7","teams":["SEA","ARI"],"kind":"Long TD","when":"Q1 12:38","text":"Seahawks: Drew Lock hit Jaxon Smith-Njigba for 82 yards and a touchdown.","score":0.328},{"week":2,"game":"WAS 20 @ DAL 37","teams":["WAS","DAL"],"kind":"Turnover \u2192 TD","when":"Q3 07:15","text":"Commanders turnover: Dee Winters recovered a fumble by Dyami Brown, and 2 plays later Dak Prescott hit Jake Ferguson for 12 yards and a touchdown. They started 13 yards from the end zone.","score":0.304},{"week":2,"game":"WAS 20 @ DAL 37","teams":["WAS","DAL"],"kind":"Biggest swing","when":"Q2 00:03","text":"With the Commanders down 7, Jayden Daniels's pass fell incomplete.","score":0.126},{"week":3,"game":"ARI 30 @ SF 36","teams":["SF","ARI"],"kind":"Long TD","when":"Q1 08:40","text":"49ers: Brock Purdy hit Mike Evans for 82 yards and a touchdown.","score":0.328},{"week":3,"game":"ATL 35 @ GB 14","teams":["ATL","GB"],"kind":"Biggest swing","when":"Q1 13:33","text":"With the game tied, Xavier McKinney intercepted Michael Penix Jr.","score":0.109},{"week":3,"game":"BAL 34 @ DAL 31","teams":["BAL","DAL"],"kind":"Biggest swing","when":"Q4 00:01","text":"With the game tied, Tyler Loop's 56-yard field goal was good.","score":0.271},{"week":3,"game":"CAR 18 @ CLE 21","teams":["CLE","CAR"],"kind":"Biggest swing","when":"Q4 01:55","text":"With the Browns down 5, Deshaun Watson hit Harold Fannin Jr. for 14 yards and a touchdown.","score":0.226},{"week":3,"game":"CIN 27 @ PIT 30","teams":["CIN","PIT"],"kind":"Biggest swing","when":"Q4 00:53","text":"With the Bengals down 3, Joe Burrow lost a fumble, recovered by Sebastian Joseph-Day.","score":0.419},{"week":3,"game":"CIN 27 @ PIT 30","teams":["PIT","CIN"],"kind":"Turnover \u2192 TD","when":"Q2 01:46","text":"Steelers turnover: Jordan Battle intercepted Aaron Rodgers, and 5 plays later Joe Burrow hit Tee Higgins for 28 yards and a touchdown.","score":0.372},{"week":3,"game":"HOU 17 @ IND 19","teams":["IND","HOU"],"kind":"Biggest swing","when":"Q4 00:21","text":"With the Colts down 1, Spencer Shrader's 53-yard field goal was good.","score":0.359},{"week":3,"game":"HOU 17 @ IND 19","teams":["IND","HOU"],"kind":"Turnover \u2192 TD","when":"Q4 04:45","text":"Colts turnover: Tommy Togiai recovered a fumble by Daniel Jones, and 7 plays later Woody Marks ran for 1 yards and a touchdown.","score":0.278},{"week":3,"game":"KC 24 @ MIA 10","teams":["MIA","KC"],"kind":"Biggest swing","when":"Q2 03:16","text":"With the Dolphins down 7, Malik Willis lost a fumble, recovered by L'Jarius Sneed.","score":0.133},{"week":3,"game":"LAC 16 @ BUF 24","teams":["LAC","BUF"],"kind":"Turnover \u2192 TD","when":"Q4 13:38","text":"Chargers turnover: C.J. Gardner-Johnson intercepted Justin Herbert, and 13 plays later Josh Allen ran for 1 yards and a touchdown.","score":0.364},{"week":3,"game":"LAC 16 @ BUF 24","teams":["BUF","LAC"],"kind":"Turnover \u2192 TD","when":"Q1 14:53","text":"Bills turnover: Daiyan Henley recovered a fumble by James Cook, and 8 plays later Justin Herbert hit Keaton Mitchell for 1 yards and a touchdown.","score":0.251},{"week":3,"game":"LA 26 @ DEN 30","teams":["LA","DEN"],"kind":"Defensive TD","when":"Q4 05:01","text":"Talanoa Hufanga intercepted Matthew Stafford and took it back for a Broncos touchdown.","score":0.726},{"week":3,"game":"LA 26 @ DEN 30","teams":["LA","DEN"],"kind":"Long TD","when":"Q4 03:46","text":"Rams: Matthew Stafford hit Konata Mumpfield for 48 yards and a touchdown.","score":0.192},{"week":3,"game":"LV 35 @ NO 27","teams":["NO","LV"],"kind":"Turnover \u2192 TD","when":"Q4 08:03","text":"Saints turnover: Hezekiah Masses intercepted Tyler Shough, and 3 plays later Kirk Cousins hit Brock Bowers for 4 yards and a touchdown. They started 4 yards from the end zone.","score":0.522},{"week":3,"game":"LV 35 @ NO 27","teams":["NO","LV"],"kind":"Turnover \u2192 TD","when":"Q4 13:04","text":"Saints turnover: Maxx Crosby recovered a fumble by Tyler Shough, and 7 plays later Kirk Cousins hit Cody White for 4 yards and a touchdown.","score":0.363},{"week":3,"game":"MIN 23 @ TB 16","teams":["MIN","TB"],"kind":"Biggest swing","when":"Q2 04:17","text":"With the game tied, Kyler Murray hit Jordan Addison for 41 yards and a touchdown.","score":0.182},{"week":3,"game":"MIN 23 @ TB 16","teams":["TB","MIN"],"kind":"Long TD","when":"Q1 06:50","text":"Buccaneers: Baker Mayfield hit Ted Hurst III for 40 yards and a touchdown.","score":0.16},{"week":3,"game":"NE 6 @ JAX 35","teams":["NE","JAX"],"kind":"Turnover \u2192 TD","when":"Q1 03:58","text":"Patriots turnover: DaVon Hamilton recovered a fumble by Drake Maye, and 10 plays later Trevor Lawrence hit Josh Cameron for 12 yards and a touchdown.","score":0.376},{"week":3,"game":"NE 6 @ JAX 35","teams":["NE","JAX"],"kind":"Turnover \u2192 TD","when":"Q3 01:03","text":"Patriots turnover: Jarrian Jones intercepted Drake Maye, and on the next play Chris Rodriguez Jr. ran for 5 yards and a touchdown. They started 5 yards from the end zone.","score":0.171},{"week":3,"game":"NYJ 24 @ DET 31","teams":["NYJ","DET"],"kind":"Biggest swing","when":"Q4 04:11","text":"With the Jets down 8, Geno Smith hit Garrett Wilson for 23 yards and a touchdown.","score":0.201},{"week":3,"game":"PHI 7 @ CHI 27","teams":["PHI","CHI"],"kind":"Turnover \u2192 TD","when":"Q3 00:27","text":"Eagles turnover: T.J. Edwards intercepted Jalen Hurts, and 13 plays later Case Keenum ran for 1 yards and a touchdown.","score":0.183},{"week":3,"game":"PHI 7 @ CHI 27","teams":["CHI","PHI"],"kind":"Long TD","when":"Q3 05:55","text":"Bears: Case Keenum hit Kalif Raymond for 41 yards and a touchdown.","score":0.164},{"week":3,"game":"SEA 31 @ WAS 33","teams":["SEA","WAS"],"kind":"Defensive TD","when":"Q4 04:09","text":"Kain Medrano intercepted Sam Darnold and took it back for a Commanders touchdown.","score":0.488},{"week":3,"game":"SEA 31 @ WAS 33","teams":["SEA","WAS"],"kind":"Turnover \u2192 TD","when":"Q1 11:06","text":"Seahawks turnover: Tim Settle recovered a fumble by Jadarian Price, and 4 plays later Marcus Mariota hit Rachaad White for 6 yards and a touchdown. They started 21 yards from the end zone.","score":0.327},{"week":3,"game":"TEN 7 @ NYG 12","teams":["TEN","NYG"],"kind":"Biggest swing","when":"Q4 00:24","text":"With the Titans down 5, Jevon Holland intercepted Cam Ward.","score":0.457},{"week":4,"game":"ARI 24 @ NYG 36","teams":["ARI","NYG"],"kind":"Turnover \u2192 TD","when":"Q2 03:15","text":"Cardinals turnover: Arvell Reese intercepted Jacoby Brissett, and 2 plays later Jameis Winston hit Malik Nabers for 25 yards and a touchdown. They started 26 yards from the end zone.","score":0.442},{"week":4,"game":"ARI 24 @ NYG 36","teams":["ARI","NYG"],"kind":"Defensive TD","when":"Q4 00:11","text":"Deonte Banks intercepted Jacoby Brissett and took it back for a Giants touchdown.","score":0.417},{"week":4,"game":"DAL 34 @ HOU 30","teams":["DAL","HOU"],"kind":"Biggest swing","when":"Q4 00:43","text":"With the Cowboys down 3, Dak Prescott hit CeeDee Lamb for 12 yards and a touchdown.","score":0.293},{"week":4,"game":"DEN 14 @ SF 24","teams":["SF","DEN"],"kind":"Long TD","when":"Q4 02:25","text":"49ers: Brock Purdy hit George Kittle for 56 yards and a touchdown.","score":0.224},{"week":4,"game":"DET 26 @ CAR 32","teams":["DET","CAR"],"kind":"Biggest swing","when":"Q3 07:53","text":"With the Lions down 6, Jared Goff hit Isaac TeSlaa for 57 yards.","score":0.154},{"week":4,"game":"GB 17 @ TB 14","teams":["TB","GB"],"kind":"Turnover \u2192 TD","when":"Q1 07:15","text":"Buccaneers turnover: Evan Williams intercepted Jalon Daniels, and 16 plays later Jordan Love hit Matthew Golden for 2 yards and a touchdown.","score":0.359},{"week":4,"game":"GB 17 @ TB 14","teams":["GB","TB"],"kind":"Biggest swing","when":"Q4 04:26","text":"With the Packers up 3, Jacob Parrish intercepted Jordan Love.","score":0.21},{"week":4,"game":"IND 30 @ WAS 13","teams":["WAS","IND"],"kind":"Turnover \u2192 TD","when":"Q3 14:17","text":"Commanders turnover: Jaylon Carlies intercepted Athan Kaliakmanis, and 4 plays later Jonathan Taylor ran for 5 yards and a touchdown. They started 20 yards from the end zone.","score":0.23},{"week":4,"game":"IND 30 @ WAS 13","teams":["WAS","IND"],"kind":"Long TD","when":"Q3 10:47","text":"Commanders: Athan Kaliakmanis hit Treylon Burks for 47 yards and a touchdown.","score":0.188},{"week":4,"game":"JAX 22 @ CIN 17","teams":["CIN","JAX"],"kind":"Turnover \u2192 TD","when":"Q2 02:00","text":"Bengals turnover: Jourdan Lewis intercepted Joe Burrow, and 4 plays later Trevor Lawrence hit Brian Thomas Jr. for 7 yards and a touchdown. They started 18 yards from the end zone.","score":0.401},{"week":4,"game":"JAX 22 @ CIN 17","teams":["CIN","JAX"],"kind":"Biggest swing","when":"Q4 00:56","text":"With the Bengals down 5, Joe Burrow hit Chase Brown for 9 yards.","score":0.264},{"week":4,"game":"KC 30 @ LV 27","teams":["KC","LV"],"kind":"Biggest swing","when":"Q4 03:35","text":"With the Chiefs down 2, Patrick Mahomes hit Tyquan Thornton for 55 yards.","score":0.349},{"week":4,"game":"LAC 23 @ SEA 30","teams":["LAC","SEA"],"kind":"Turnover \u2192 TD","when":"Q2 01:29","text":"Chargers turnover: Ernest Jones intercepted Justin Herbert, and 2 plays later Emanuel Wilson ran for 8 yards and a touchdown. They started 20 yards from the end zone.","score":0.227},{"week":4,"game":"LAC 23 @ SEA 30","teams":["SEA","LAC"],"kind":"Biggest swing","when":"Q2 08:55","text":"With the Seahawks up 4, Sam Darnold hit Jaxon Smith-Njigba for 28 yards.","score":0.09},{"week":4,"game":"LA 24 @ PHI 20","teams":["LA","PHI"],"kind":"Turnover \u2192 TD","when":"Q2 00:34","text":"Rams turnover: Cooper DeJean intercepted Matthew Stafford, and 2 plays later Jalen Hurts hit Darius Cooper for 10 yards and a touchdown. They started 35 yards from the end zone.","score":0.302},{"week":4,"game":"LA 24 @ PHI 20","teams":["LA","PHI"],"kind":"Biggest swing","when":"Q4 01:17","text":"With the Rams down 3, Kyren Williams ran for 7 yards and a touchdown.","score":0.162},{"week":4,"game":"MIA 10 @ MIN 15","teams":["MIA","MIN"],"kind":"Biggest swing","when":"Q3 14:08","text":"With the Dolphins down 9, Ollie Gordon II ran for 53 yards.","score":0.11},{"week":4,"game":"NE 29 @ BUF 26","teams":["BUF","NE"],"kind":"Biggest swing","when":"Q4 01:14","text":"With the Bills down 3, Craig Woodson intercepted Josh Allen.","score":0.27},{"week":4,"game":"NYJ 12 @ CHI 23","teams":["NYJ","CHI"],"kind":"Long TD","when":"Q4 09:25","text":"Jets: Geno Smith hit Isaiah Williams for 58 yards and a touchdown.","score":0.232},{"week":4,"game":"NYJ 12 @ CHI 23","teams":["CHI","NYJ"],"kind":"Biggest swing","when":"Q2 11:52","text":"With the Bears up 7, Minkah Fitzpatrick intercepted Tyson Bagent.","score":0.127},{"week":4,"game":"PIT 24 @ CLE 27","teams":["PIT","CLE"],"kind":"Turnover \u2192 TD","when":"Q2 14:17","text":"Steelers turnover: Denzel Ward intercepted Aaron Rodgers, and 4 plays later Jaleel McLaughlin ran for 28 yards and a touchdown.","score":0.338},{"week":4,"game":"PIT 24 @ CLE 27","teams":["CLE","PIT"],"kind":"Turnover \u2192 TD","when":"Q4 14:19","text":"Browns turnover: Robert Spears-Jennings intercepted Deshaun Watson, and 7 plays later Aaron Rodgers hit Darnell Washington for 21 yards and a touchdown.","score":0.259},{"week":4,"game":"TEN 18 @ BAL 24","teams":["TEN","BAL"],"kind":"Turnover \u2192 TD","when":"Q1 14:18","text":"Titans turnover: Trenton Simpson intercepted Cam Ward, and 5 plays later Derrick Henry ran for 5 yards and a touchdown.","score":0.386}]};
+const T = D.teams, F = D.frames, W = F.length - 1, N = T.length;
+const M = {
+  pd:   { label: "Point differential", fmt: v => (v > 0 ? "+" : "") + Math.round(v), round: v => Math.round(v), note: "Distance from the starting gate = total points scored minus allowed" },
+  wins: { label: "Wins", fmt: v => String(Math.round(v * 2) / 2), round: v => Math.round(v * 2) / 2, note: "Distance from the starting gate = wins (ties count as half)" },
+  srs:  { label: "Strength-adjusted rating", fmt: v => (v > 0 ? "+" : "") + v.toFixed(1), round: v => Math.round(v * 10) / 10, note: "Distance = rating, in points better or worse than an average team" },
+};
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const MS_PER_WEEK = 1700, LANE = 22, TOP = 26, RANKW = 30, LABELW = 92;
+
+let metric = "pd", t = W, playing = false, sel = null, raf = 0, lastTs = 0;
+let ys = null, geo = null;
+
+const ease = f => f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+function val(m, i, tt) {
+  if (reduce) tt = Math.round(tt);
+  const a = Math.floor(tt), b = Math.min(W, a + 1), f = ease(tt - a);
+  return F[a][m][i] + (F[b][m][i] - F[a][m][i]) * f;
+}
+function standings(tt) {
+  const v = T.map((_, i) => val(metric, i, tt));
+  const pd = T.map((_, i) => val("pd", i, tt));
+  const order = T.map((_, i) => i).sort((a, b) => v[b] - v[a] || pd[b] - pd[a] || T[a].abbr.localeCompare(T[b].abbr));
+  return { v, order };
+}
+function domain() {
+  let lo = 0, hi = 0;
+  for (const fr of F) for (const x of fr[metric]) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
+  const pad = (hi - lo) * 0.04 || 1;
+  return [lo < 0 ? lo - pad : 0, hi + pad];
+}
+function niceTicks(lo, hi, n) {
+  const raw = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 5, 10].map(k => k * p).find(s => s >= raw);
+  const out = [];
+  for (let x = Math.ceil(lo / step) * step; x <= hi + 1e-9; x += step) out.push(+x.toFixed(6));
+  return out;
+}
+
+// ---- build SVG once ----
+const svg = $("track");
+const gStripes = document.createElementNS(NS, "g");
+const gAxis = document.createElementNS(NS, "g");
+const gLanes = document.createElementNS(NS, "g");
+svg.append(gStripes, gAxis, gLanes);
+const H = TOP + N * LANE + 4;
+for (let k = 0; k < N; k++) {
+  const r = document.createElementNS(NS, "rect");
+  r.setAttribute("y", TOP + k * LANE); r.setAttribute("height", LANE); r.setAttribute("x", 0);
+  r.setAttribute("fill", k % 2 ? "transparent" : "var(--lane)"); r.setAttribute("rx", 4);
+  gStripes.append(r);
+  const n = document.createElementNS(NS, "text");
+  n.setAttribute("x", RANKW - 8); n.setAttribute("y", TOP + k * LANE + LANE / 2 + 4.5);
+  n.setAttribute("text-anchor", "end"); n.setAttribute("font-size", 13);
+  n.setAttribute("fill", k < 3 ? "var(--ink)" : "var(--muted)"); n.setAttribute("font-weight", k < 3 ? 600 : 500);
+  gStripes.append(n);
+}
+const rankEls = [...gStripes.querySelectorAll("text")];
+const lanes = T.map((tm, i) => {
+  const g = document.createElementNS(NS, "g");
+  g.style.cursor = "pointer";
+  const hit = document.createElementNS(NS, "rect");
+  hit.setAttribute("height", LANE); hit.setAttribute("y", -LANE / 2); hit.setAttribute("x", 0); hit.setAttribute("fill", "transparent");
+  const trail = document.createElementNS(NS, "line");
+  trail.setAttribute("stroke-width", 2); trail.setAttribute("stroke-linecap", "round");
+  const horse = document.createElementNS(NS, "circle");
+  horse.setAttribute("r", 6); horse.setAttribute("stroke", "var(--surface)"); horse.setAttribute("stroke-width", 2);
+  const lbl = document.createElementNS(NS, "text");
+  lbl.setAttribute("font-size", 13); lbl.setAttribute("y", 4.5);
+  const ab = document.createElementNS(NS, "tspan"); ab.textContent = tm.abbr; ab.setAttribute("font-weight", 600);
+  const vv = document.createElementNS(NS, "tspan"); vv.setAttribute("fill", "var(--muted)"); vv.setAttribute("dx", 5);
+  lbl.append(ab, vv);
+  g.append(hit, trail, horse, lbl);
+  g.addEventListener("pointermove", e => showTip(i, e));
+  g.addEventListener("pointerleave", hideTip);
+  g.addEventListener("click", e => { setSel(sel === i ? null : i); showTip(i, e); });
+  gLanes.append(g);
+  return { g, hit, trail, horse, lbl, ab, vv };
+});
+
+function layout() {
+  const w = svg.clientWidth || 600;
+  const [lo, hi] = domain();
+  const left = RANKW + (lo < 0 ? LABELW - 10 : 10), right = w - LABELW;
+  const x = v => left + (v - lo) / (hi - lo) * (right - left);
+  geo = { w, x, lo, hi };
+  svg.setAttribute("viewBox", `0 0 ${w} ${H}`); svg.setAttribute("height", H);
+  gStripes.querySelectorAll("rect").forEach(r => r.setAttribute("width", w));
+  lanes.forEach(l => l.hit.setAttribute("width", w));
+  gAxis.replaceChildren();
+  for (const tk of niceTicks(lo, hi, w < 520 ? 4 : 7)) {
+    const X = x(tk), zero = tk === 0;
+    const ln = document.createElementNS(NS, "line");
+    ln.setAttribute("x1", X); ln.setAttribute("x2", X); ln.setAttribute("y1", TOP - 4); ln.setAttribute("y2", H - 4);
+    ln.setAttribute("stroke", zero ? "var(--ink-2)" : "var(--rule)"); ln.setAttribute("stroke-width", zero ? 1.5 : 1);
+    if (zero) ln.setAttribute("stroke-dasharray", "3 3");
+    const tx = document.createElementNS(NS, "text");
+    tx.setAttribute("x", X); tx.setAttribute("y", TOP - 9); tx.setAttribute("text-anchor", "middle");
+    tx.setAttribute("font-size", 12); tx.setAttribute("fill", zero ? "var(--ink-2)" : "var(--muted)");
+    tx.textContent = zero ? "START" : M[metric].fmt(tk);
+    gAxis.append(ln, tx);
+  }
+}
+
+function render(dt) {
+  const { v, order } = standings(t);
+  if (!ys) ys = order.reduce((a, i, k) => (a[i] = k, a), []);
+  const k = Math.min(1, reduce ? 1 : dt / 110);
+  let moving = false;
+  const round = M[metric].round;
+  order.forEach((i, rank) => {
+    ys[i] += (rank - ys[i]) * k;
+    if (Math.abs(rank - ys[i]) > 0.01) moving = true; else ys[i] = rank;
+  });
+  // shared ranks for ties at displayed precision
+  order.forEach((i, pos) => {
+    const better = order.filter(j => round(v[j]) > round(v[i])).length;
+    const tied = order.some(j => j !== i && round(v[j]) === round(v[i]));
+    rankEls[pos].textContent = (tied ? "T" : "") + (better + 1);
+  });
+  const x0 = geo.x(0);
+  T.forEach((tm, i) => {
+    const L = lanes[i], X = geo.x(v[i]), Y = TOP + ys[i] * LANE + LANE / 2;
+    const isSel = sel === i, lead = order[0] === i, dim = sel !== null && !isSel;
+    L.g.setAttribute("transform", `translate(0 ${Y})`);
+    L.trail.setAttribute("x1", x0); L.trail.setAttribute("x2", X);
+    L.trail.setAttribute("stroke", isSel ? "var(--accent)" : "var(--muted)");
+    L.trail.setAttribute("stroke-opacity", isSel ? 1 : dim ? 0.25 : 0.55);
+    L.horse.setAttribute("cx", X);
+    L.horse.setAttribute("fill", isSel ? "var(--accent)" : lead ? "var(--gold)" : "var(--ink-2)");
+    L.horse.setAttribute("r", isSel || lead ? 7 : 6);
+    L.horse.setAttribute("opacity", dim ? 0.45 : 1);
+    const neg = v[i] < 0;
+    L.lbl.setAttribute("x", neg ? X - 11 : X + 11);
+    L.lbl.setAttribute("text-anchor", neg ? "end" : "start");
+    L.ab.setAttribute("fill", isSel ? "var(--accent)" : "var(--ink)");
+    L.lbl.setAttribute("opacity", dim ? 0.5 : 1);
+    L.vv.textContent = M[metric].fmt(v[i]);
+  });
+  if (sel !== null) gLanes.append(lanes[sel].g);
+  const ld = order[0];
+  $("lwho").textContent = t < 0.5 ? "At the gate" : T[ld].name;
+  $("lval").textContent = t < 0.5 ? "" : M[metric].fmt(v[ld]);
+  $("wk").textContent = Math.round(t) === 0 ? "Gate" : "Week " + Math.round(t);
+  $("scrub").value = t;
+  renderTable();
+  renderHighlights();
+  return moving;
+}
+
+let hlKey = "";
+function renderHighlights() {
+  const k = Math.max(1, Math.round(t)), key = k + "|" + sel;
+  if (key === hlKey) return; hlKey = key;
+  let list, head, sub;
+  if (sel !== null) {
+    const ab = T[sel].abbr;
+    list = D.highlights.filter(h => h.teams.includes(ab) && h.week <= k).sort((a, b) => b.week - a.week || b.score - a.score);
+    head = `${T[sel].name} highlights`;
+    sub = `Weeks 1 to ${k}, newest first. Includes plays against them.`;
+  } else {
+    list = D.highlights.filter(h => h.week === k).sort((a, b) => b.score - a.score).slice(0, 9);
+    head = `Week ${k} highlights`;
+    sub = "The biggest moments of the week, ranked by how much they swung the odds of winning. Follow a team to see its season.";
+  }
+  $("hlh").textContent = head; $("hlsub").textContent = sub;
+  const cards = list.map(h => {
+    const c = document.createElement("article"); c.className = "hl-card";
+    const meta = document.createElement("div"); meta.className = "hl-meta";
+    const kind = document.createElement("span");
+    kind.className = "hl-kind" + (h.kind.includes("TD") && h.kind !== "Long TD" ? " to" : "");
+    kind.textContent = h.kind;
+    const game = document.createElement("span"); game.className = "hl-game"; game.textContent = `Wk ${h.week} · ${h.game}`;
+    const when = document.createElement("span"); when.textContent = h.when;
+    meta.append(kind, game, when);
+    const p = document.createElement("p"); p.textContent = h.text;
+    c.append(meta, p);
+    return c;
+  });
+  if (!cards.length) { const e = document.createElement("p"); e.className = "hl-empty"; e.textContent = "No highlights yet."; cards.push(e); }
+  $("hllist").replaceChildren(...cards);
+}
+
+let tblKey = "";
+function renderTable() {
+  const k = Math.round(t), key = metric + k + sel;
+  if (key === tblKey) return; tblKey = key;
+  const fr = F[k], m = metric;
+  const order = T.map((_, i) => i).sort((a, b) => fr[m][b] - fr[m][a] || fr.pd[b] - fr.pd[a] || T[a].abbr.localeCompare(T[b].abbr));
+  $("tblh").textContent = k === 0 ? "Standings" : `Standings after Week ${k}, by ${M[m].label.toLowerCase()}`;
+  document.querySelectorAll("th[data-m]").forEach(th => th.classList.toggle("sorted", th.dataset.m === m));
+  $("tbody").replaceChildren(...order.map((i, pos) => {
+    const tr = document.createElement("tr"); if (i === sel) tr.className = "sel";
+    [pos + 1, T[i].name, fr.rec[i], M.pd.fmt(fr.pd[i]), M.srs.fmt(fr.srs[i])].forEach(c => {
+      const td = document.createElement("td"); td.textContent = c; tr.append(td);
+    });
+    return tr;
+  }));
+}
+
+function tick(ts) {
+  const dt = lastTs ? Math.min(64, ts - lastTs) : 16; lastTs = ts;
+  if (playing) {
+    t = Math.min(W, t + dt / MS_PER_WEEK);
+    if (t >= W) { playing = false; setPlayLabel(); }
+  }
+  const moving = render(dt);
+  if (playing || moving) raf = requestAnimationFrame(tick); else { raf = 0; lastTs = 0; }
+}
+const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
+const setPlayLabel = () => $("play").textContent = playing ? "Pause" : t >= W ? "Replay race" : "Play race";
+
+function setSel(i) {
+  sel = i; $("follow").value = i === null ? "" : T[i].abbr; tblKey = ""; hlKey = ""; kick();
+}
+function setMetric(m) {
+  metric = m;
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m));
+  $("mnote").textContent = M[m].note;
+  layout(); tblKey = ""; kick();
+}
+
+const tip = $("tip"), board = $("board");
+function showTip(i, e) {
+  const k = Math.round(t), fr = F[k];
+  tip.innerHTML = `<b>${T[i].name}</b><br>${fr.rec[i]} · ${T[i].div}<br>Pt diff ${M.pd.fmt(fr.pd[i])} · Strength ${M.srs.fmt(fr.srs[i])}<br>${fr.last[i]}`;
+  tip.hidden = false;
+  const b = board.getBoundingClientRect();
+  let x = e.clientX - b.left + 14, y = e.clientY - b.top + 14;
+  if (x + tip.offsetWidth > b.width - 8) x = e.clientX - b.left - tip.offsetWidth - 14;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.hidden = true; }
+
+// ---- wire up ----
+$("scrub").max = W;
+$("status").innerHTML = `${D.status}<br>Latest game ${D.updated}`;
+$("foot").innerHTML = `Data: <a href="https://github.com/nflverse" target="_blank" rel="noopener">nflverse</a> 2026 regular season. Week 0 is the starting gate; teams on a bye hold their position for that week. Hover or tap a lane for details.`;
+T.forEach((tm, i) => { const o = document.createElement("option"); o.value = tm.abbr; o.textContent = tm.name; $("follow").append(o); });
+$("follow").addEventListener("change", e => setSel(e.target.value ? T.findIndex(x => x.abbr === e.target.value) : null));
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => setMetric(b.dataset.m)));
+$("play").addEventListener("click", () => {
+  if (playing) playing = false;
+  else { if (t >= W) t = 0; playing = true; }
+  setPlayLabel(); kick();
+});
+$("scrub").addEventListener("input", e => { playing = false; t = +e.target.value; setPlayLabel(); kick(); });
+new ResizeObserver(() => { layout(); kick(); }).observe(svg);
+setMetric("pd"); setPlayLabel();
+</script>
+</body>
+</html>
