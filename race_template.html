@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Week-by-week race of all 32 NFL teams in the 2026 season, with game highlights. Updates daily.">
-<title>NFL Derby 2026</title>
+<meta name="description" content="Week-by-week race of all 32 NFL teams in the 2026-27 season, with game highlights. Updates daily.">
+<title>NFL Derby 26-27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
@@ -89,7 +89,7 @@ footer a { color: var(--ink-2); }
 <div class="wrap">
   <header>
     <div>
-      <h1>NFL Derby 2026</h1>
+      <h1>NFL Derby 26-27</h1>
       <p class="sub">Every team racing week by week. Pick what "best" means and watch the lead change.</p>
     </div>
     <div class="status" id="status"></div>
@@ -384,7 +384,7 @@ function hideTip() { tip.hidden = true; }
 // ---- wire up ----
 $("scrub").max = W;
 $("status").innerHTML = `${D.status}<br>Latest game ${D.updated}`;
-$("foot").innerHTML = `Data: <a href="https://github.com/nflverse" target="_blank" rel="noopener">nflverse</a> 2026 regular season. Week 0 is the starting gate; teams on a bye hold their position for that week. Hover or tap a lane for details.`;
+$("foot").innerHTML = `Data: <a href="https://github.com/nflverse" target="_blank" rel="noopener">nflverse</a> 2026-27 regular season. Week 0 is the starting gate; teams on a bye hold their position for that week. Hover or tap a lane for details.`;
 T.forEach((tm, i) => { const o = document.createElement("option"); o.value = tm.abbr; o.textContent = tm.name; $("follow").append(o); });
 $("follow").addEventListener("change", e => setSel(e.target.value ? T.findIndex(x => x.abbr === e.target.value) : null));
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => setMetric(b.dataset.m)));

@@ -1,8 +1,8 @@
-# NFL Derby 2026
+# NFL Derby 26-27
 
-**Live page: https://jasondchew.github.io/nfl-derby-2026/**
+**Live page: https://jasondchew.github.io/nfl-derby-26-27/**
 
-An animated, week-by-week race of all 32 NFL teams in the 2026 season, plus game highlights generated from play-by-play data. You can rank teams three ways: wins, point differential, or a strength-adjusted rating (a least-squares fit where each game is one equation, `home rating − away rating = margin`).
+An animated, week-by-week race of all 32 NFL teams in the 2026-27 season, plus game highlights generated from play-by-play data. You can rank teams three ways: wins, point differential, or a strength-adjusted rating (a least-squares fit where each game is one equation, `home rating − away rating = margin`).
 
 The page updates itself. A GitHub Action runs every morning, pulls the latest data from [nflverse](https://github.com/nflverse), rebuilds the CSVs and the page, and commits only when something changed.
 
