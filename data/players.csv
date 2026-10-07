@@ -60,6 +60,7 @@ player_id,full_name
 00-0031492,Jason Myers
 00-0031503,Jameis Winston
 00-0031550,Shaq Thompson
+00-0031554,Eric Kendricks
 00-0031565,Danielle Hunter
 00-0031576,Za'Darius Smith
 00-0031583,Grady Jarrett
@@ -502,6 +503,7 @@ player_id,full_name
 00-0036124,Khalil Dorsey
 00-0036130,Nnamdi Madubuike
 00-0036132,Ben Bredeson
+00-0036133,James Proche
 00-0036139,Rico Dowdle
 00-0036157,Kristian Welch
 00-0036158,J.K. Dobbins
@@ -544,6 +546,7 @@ player_id,full_name
 00-0036265,AJ Dillon
 00-0036266,Jordan Elliott
 00-0036267,Jedrick Wills
+00-0036271,Quez Watkins
 00-0036272,Ben Bartch
 00-0036275,D'Andre Swift
 00-0036280,Malik Harrison
@@ -639,6 +642,7 @@ player_id,full_name
 00-0036501,Michael Carter II
 00-0036502,Jason Pinnock
 00-0036504,Brandin Echols
+00-0036510,Kenny Yeboah
 00-0036511,Milo Eifler
 00-0036534,Shane Zylstra
 00-0036535,Will Sherman
@@ -1215,6 +1219,7 @@ player_id,full_name
 00-0038578,Jay Ward
 00-0038579,Aidan O'Connell
 00-0038580,Yasir Abdullah
+00-0038581,K.J. Henry
 00-0038585,Cameron Mitchell
 00-0038586,Atonio Mafi
 00-0038587,Jammie Robinson
@@ -1486,6 +1491,7 @@ player_id,full_name
 00-0039285,Jarius Monroe
 00-0039288,Jackson Sirmon
 00-0039289,Leonard Taylor III
+00-0039291,Eric Watts
 00-0039292,Shemar Bartholomew
 00-0039299,George Holani
 00-0039305,Jack Westover
@@ -1859,6 +1865,7 @@ player_id,full_name
 00-0040023,John Williams
 00-0040024,Darius Cooper
 00-0040026,Maxen Hook
+00-0040027,Brandon Johnson
 00-0040033,Johnathan Baldwin
 00-0040034,Brant Banks
 00-0040037,Jamon Johnson
@@ -2753,7 +2760,7 @@ player_id,full_name
 00-0041296,Tyler Miller
 00-0041297,Gavin Ortega
 00-0041298,Parker Robertson
-00-0041299,Cameron Ross
+00-0041299,Cam Ross
 00-0041300,William Wright
 00-0041301,Taurean York
 00-0041302,Dominic Bailey
@@ -2855,7 +2862,7 @@ player_id,full_name
 00-0041414,Matthew Caldwell
 00-0041415,Dean Connors
 00-0041416,Nyzier Fourqurean
-00-0041417,"Al'zillion ""AZ"" Hamilton"
+00-0041417,Al'zillion Hamilton
 00-0041418,Bryce Henderson
 00-0041419,Nikhai Hill-Green
 00-0041421,Darryl Peterson III
